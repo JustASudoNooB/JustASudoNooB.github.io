@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080B">
+<title>Akhand Raj</title>
+<meta name="description" content="Akhand Raj: credit, rates and options risk. A NIFTY options desk built from NSE's raw files, rules-based multi-asset indices, a 589k-loan credit review, an INR fixed income lab, live apps and working demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single dark stage. A living field of yield curves behind the name, a moving keyword tape,
+   then project cards that stack on top of each other as you scroll. Deliberately single-theme (dark). */
+:root{
+  --bg:#07080B; --surface:#101217; --raise:#161920; --fg:#F2F1EC; --muted:#8C919B; --line:#20232B;
+  --accent:#9AD7FF; --accent-2:#FFC567; --gain:#6EE7B7; --loss:#FF7A7A;
+  --f-display:"Bricolage Grotesque",system-ui,sans-serif; --f-mono:"Geist Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-display);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,48px)}
+.mono{font-family:var(--f-mono)}
+.lab{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+.bar{position:fixed;left:0;right:0;top:0;z-index:30;padding-top:env(safe-area-inset-top,0px);background:linear-gradient(var(--bg),color-mix(in srgb,var(--bg) 0%,transparent))}
+.bar .wrap{display:flex;justify-content:space-between;align-items:center;padding-block:18px}
+.bar a{text-decoration:none}
+.brand{font-weight:700;letter-spacing:-.02em}
+.bar nav{display:flex;gap:22px;font-size:.9rem}
+.bar nav a{color:var(--muted);transition:color .2s}
+.bar nav a:hover{color:var(--fg)}
+.prog{position:absolute;left:0;bottom:0;height:1px;background:var(--accent);width:0}
+@media (max-width:700px){.bar nav a:not(:last-child){display:none}}
+
+/* hero */
+.hero{position:relative;min-height:min(860px,100svh);display:flex;align-items:flex-end;padding-top:110px;padding-bottom:56px;overflow:hidden}
+#field{position:absolute;inset:0;width:100%;height:100%;opacity:.95}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 20% 90%,var(--bg) 20%,transparent 70%);pointer-events:none}
+.hero .wrap{position:relative;z-index:2;width:100%}
+.hero h1{font-size:clamp(4rem,15vw,13.5rem);line-height:.82;letter-spacing:-.06em;font-weight:800}
+.hero h1 .ln{display:block;overflow:hidden;padding-bottom:.04em}
+.hero h1 .ln span{display:inline-block;animation:up 1s cubic-bezier(.2,.8,.2,1) both}
+.hero h1 .ln:nth-child(2) span{animation-delay:.12s;color:var(--accent)}
+@keyframes up{from{transform:translateY(105%)}to{transform:none}}
+.hero-foot{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;margin-top:32px;align-items:end}
+@media (max-width:820px){.hero-foot{grid-template-columns:1fr}}
+.hero-foot p{font-size:clamp(1.1rem,1.8vw,1.45rem);font-weight:300;max-width:34ch;margin:0}
+.hero-foot p em{font-style:normal;color:var(--accent-2)}
+.ctas{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:820px){.ctas{justify-content:flex-start}}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(8px);color:var(--fg);font-weight:600;text-decoration:none;font-family:inherit;font-size:.95rem;cursor:pointer;transition:transform .2s,background .2s}
+.btn:hover{background:var(--raise)}
+.btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:2}
+
+/* tape */
+.tape{border-block:1px solid var(--line);overflow:hidden;white-space:nowrap;padding-block:18px}
+.tape-in{display:inline-flex;gap:48px;animation:slide 38s linear infinite;font-size:clamp(1.4rem,3vw,2.2rem);font-weight:600;letter-spacing:-.02em}
+.tape-in span{display:inline-flex;align-items:center;gap:48px;color:var(--muted)}
+.tape-in span::after{content:"✦";color:var(--accent);font-size:.6em}
+.tape-in b{color:var(--fg);font-weight:600}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+section{padding-block:clamp(72px,10vw,140px)}
+.sh{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-bottom:40px}
+.sh h2{font-size:clamp(2.8rem,7vw,6rem);line-height:.9;letter-spacing:-.05em;font-weight:700}
+.sh p{max-width:40ch;color:var(--muted);margin:0}
+
+/* numbers */
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--line)}
+.nums div{padding:28px 20px 0 0;min-width:0}
+.nums div+div{border-left:1px solid var(--line);padding-left:20px}
+.nums b{display:block;font-size:clamp(2.6rem,6vw,5rem);font-weight:700;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums}
+.nums span{color:var(--muted);font-size:.9rem}
+@media (max-width:760px){.nums{grid-template-columns:1fr 1fr}.nums div:nth-child(3){border-left:0;padding-left:0}}
+
+/* stacking cards */
+.stack{display:grid;gap:28px}
+.card{position:sticky;top:calc(84px + var(--i)*14px);background:var(--surface);border:1px solid var(--line);border-radius:30px;padding:clamp(20px,3vw,40px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(20px,3vw,48px);box-shadow:0 -20px 60px -30px rgba(0,0,0,.9);min-height:min(620px,auto)}
+@media (max-width:900px){.card{position:relative;top:0;grid-template-columns:1fr}}
+.card h3{font-size:clamp(2.2rem,5vw,4rem);line-height:.92;letter-spacing:-.05em;font-weight:700;margin-top:16px}
+.card .lead{font-size:1.15rem;font-weight:300;margin:16px 0 0;max-width:42ch}
+.card ul{list-style:none;padding:0;margin:20px 0 0;color:var(--muted);display:grid;gap:8px;font-size:.98rem}
+.card li{padding-left:22px;position:relative}
+.card li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+.pill{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;padding:5px 11px;border-radius:999px;border:1px solid currentColor;display:inline-flex;align-items:center;gap:7px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.live{color:var(--gain)}.tested{color:var(--accent)}.build{color:var(--accent-2)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px}
+.tags span{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+.inst{background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:clamp(14px,2vw,22px);min-width:0;align-self:start}
+.cv{position:relative;width:100%;aspect-ratio:16/9}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%}
+.ctl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin-top:14px}
+@media (max-width:520px){.ctl{grid-template-columns:1fr}}
+.ctl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+.ctl output{font-family:var(--f-mono);color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.outs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:14px}
+.outs div{background:var(--bg);padding:10px 12px;min-width:0}
+.outs span{display:block;font-family:var(--f-mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.outs b{font-family:var(--f-mono);font-weight:500;font-size:.95rem}
+.neg{color:var(--loss)}.pos{color:var(--gain)}
+.bars{display:grid;gap:12px}
+.bar2{display:grid;grid-template-columns:100px minmax(0,1fr) 92px;gap:12px;align-items:center;font-size:.85rem}
+.track{position:relative;height:14px;background:var(--raise);border-radius:7px}
+.track i{position:absolute;top:0;bottom:0;border-radius:7px}
+.track .z{position:absolute;left:92%;top:-5px;bottom:-5px;width:2px;background:var(--fg);opacity:.4}
+.bar2 .v{font-family:var(--f-mono);text-align:right}
+.chip{font-family:var(--f-mono);font-size:.7rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--raise);color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.fine{font-size:.74rem;color:var(--muted);margin-top:10px;font-family:var(--f-mono)}
+.gst-in{width:100%;font-family:var(--f-mono);font-size:clamp(1rem,2.6vw,1.3rem);letter-spacing:.14em;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-transform:uppercase}
+.gst-cells{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px;margin-top:10px}
+.gst-cells span{font-family:var(--f-mono);font-size:.78rem;text-align:center;padding:7px 0;border-radius:6px;background:var(--raise)}
+.g-state{box-shadow:inset 0 -2px 0 var(--accent-2)}.g-pan{box-shadow:inset 0 -2px 0 var(--accent)}.g-ent{box-shadow:inset 0 -2px 0 var(--muted)}.g-chk{box-shadow:inset 0 -2px 0 var(--gain)}.g-bad{box-shadow:inset 0 -2px 0 var(--loss);color:var(--loss)}
+.gst-verdict{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600}
+.gst-verdict i{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.gst-verdict.ok{color:var(--gain)}.gst-verdict.ok i{background:var(--gain)}.gst-verdict.bad{color:var(--loss)}.gst-verdict.bad i{background:var(--loss)}
+.kv3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:12px;font-size:.82rem}
+@media (max-width:520px){.kv3{grid-template-columns:1fr}}
+.kv3 div{background:var(--bg);padding:10px 12px;min-width:0}
+.kv3 span{display:block;font-family:var(--f-mono);font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+
+/* lab */
+.lab-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:900px){.lab-grid{grid-template-columns:1fr}}
+.lab-grid .ctl{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* experience */
+.xp .r{display:grid;grid-template-columns:200px minmax(0,1fr) auto;gap:24px;align-items:baseline;padding:28px 0;border-top:1px solid var(--line);text-decoration:none;transition:padding .3s}
+.xp .r:last-child{border-bottom:1px solid var(--line)}
+.xp .r:hover{padding-left:14px}
+.xp .r b{font-size:clamp(1.6rem,3.4vw,2.6rem);letter-spacing:-.04em;font-weight:600;line-height:1}
+.xp .r p{margin:10px 0 0;color:var(--muted);max-width:62ch}
+.xp .r .lab{white-space:nowrap}
+@media (max-width:760px){.xp .r{grid-template-columns:1fr;gap:8px}}
+
+.contact{text-align:left}
+.contact h2{font-size:clamp(3.4rem,13vw,11rem);line-height:.85;letter-spacing:-.06em;font-weight:800}
+.contact h2 span{color:var(--accent)}
+.mail{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:36px}
+.mail code{font-family:var(--f-mono);font-size:clamp(1rem,2.6vw,1.5rem);user-select:all;word-break:break-all}
+.mag{transition:transform .2s ease-out}
+footer{border-top:1px solid var(--line)}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:24px;font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.rv{transition:transform .9s cubic-bezier(.2,.7,.2,1),opacity .9s}
+.rv.pre{transform:translateY(40px);opacity:.35}
+
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.ihd{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.prose{font-family:var(--f-display)!important;font-weight:400!important;font-size:.9rem!important}
+.gini{display:grid;gap:7px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.grow{display:grid;grid-template-columns:84px minmax(0,1fr) 48px;gap:10px;align-items:center;font-size:.8rem;color:var(--muted)}
+.grow i{display:block;height:8px;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
+.grow i::after{content:"";position:absolute;inset:0;width:calc(var(--w)*100%/.4);background:var(--muted);border-radius:4px}
+.grow b{font-family:var(--f-mono);font-weight:500;color:var(--fg);text-align:right}
+.grow.hi{color:var(--fg)}.grow.hi i::after{background:var(--accent)}
+.cmp{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.cmp b{font-weight:700}.cmp span{color:var(--muted);font-size:.92rem}
+.lg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.lg i{display:inline-block;width:14px;height:2px;border-radius:1px;vertical-align:middle;margin-right:6px}
+.lg i.d{height:0;border-top:2px dashed currentColor;background:none}
+.verdict{margin-top:12px;font-weight:600;display:flex;flex-wrap:wrap;column-gap:8px;row-gap:2px;align-items:baseline}
+.verdict b{white-space:nowrap;font-weight:600}
+.verdict small{font-weight:400;color:var(--muted);font-size:.82rem}
+.also{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:28px}
+.also .lab{margin-right:6px}
+.now{display:inline-flex;align-items:center;gap:10px;margin-top:22px;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.now i{width:8px;height:8px;border-radius:50%;background:var(--gain);box-shadow:0 0 0 0 var(--gain);animation:ping 2.4s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gain) 60%,transparent)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.rv.pre{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">Akhand Raj</a>
+    <nav aria-label="Sections"><a href="#work">Work</a><a href="#lab">Lab</a><a href="#xp">Experience</a><a href="#contact">Contact ↗</a></nav>
+  </div>
+  <div class="prog" id="prog"></div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <canvas id="field" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <span class="lab">Credit &amp; market risk · Deutsche Bank · BITS Pilani ’27</span>
+      <h1><span class="ln"><span>Akhand</span></span><span class="ln"><span>Raj.</span></span></h1>
+      <div class="hero-foot">
+        <p>I model <em>credit, rate and options risk</em> in Python and SQL, and I write the tests that prove every number. Move your cursor over the curves.</p>
+        <div class="ctas"><a class="btn pri mag" href="#work">See the work</a><a class="btn mag" href="https://www.linkedin.com/in/akhand-raj-236b8b34a" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+      </div>
+      <span class="now"><i aria-hidden="true"></i>Now: running the NIFTY options desk on ten years of NSE files</span>
+    </div>
+  </div>
+
+  <div class="tape" aria-hidden="true"><div class="tape-in">
+    <span>Volatility <b>surfaces</b></span><span>Application <b>scorecards</b></span><span>Rules-based <b>indices</b></span><span>Key-rate <b>duration</b></span><span>Heston · <b>SABR</b></span><span>Vintage <b>analysis</b></span><span>Delta <b>hedging</b></span><span>OIS <b>hedging</b></span><span>Gini · KS · <b>PSI</b></span><span>Full-reval <b>stress</b></span><span>Monte <b>Carlo</b></span><span>Python · SQL · <b>pytest</b></span>
+    <span>Volatility <b>surfaces</b></span><span>Application <b>scorecards</b></span><span>Rules-based <b>indices</b></span><span>Key-rate <b>duration</b></span><span>Heston · <b>SABR</b></span><span>Vintage <b>analysis</b></span><span>Delta <b>hedging</b></span><span>OIS <b>hedging</b></span><span>Gini · KS · <b>PSI</b></span><span>Full-reval <b>stress</b></span><span>Monte <b>Carlo</b></span><span>Python · SQL · <b>pytest</b></span>
+  </div></div>
+
+  <section style="padding-bottom:0">
+    <div class="wrap">
+      <div class="nums rv">
+        <div><b>589k</b><span>real loans reviewed in the LendingClub credit study</span></div>
+        <div><b>700+</b><span>tests across eight codebases</span></div>
+        <div><b>2.2bp</b><span>NSS curve-fit RMSE on INR G-Secs</span></div>
+        <div><b>2k+</b><span>GRID11 jerseys sold</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="work">
+    <div class="wrap">
+      <div class="sh rv"><h2>Selected<br>work</h2><p>Each card carries a working instrument. Scroll, and the next case slides over the last.</p></div>
+      <div class="stack">
+
+        <article class="card" style="--i:0">
+          <div>
+            <div class="pills"><span class="pill live">PUBLIC · REAL DATA</span><span class="pill tested">TESTED</span></div>
+            <h3>Retail Credit Model Review</h3>
+            <p class="lead">589,249 LendingClub loans (2012–2015) taken from raw file to a risk committee memo: monitoring, root cause, scorecard, challenger model and underwriting policy.</p>
+            <ul>
+              <li>SQL static pools and vintage curves; the 2013→2015 bad-rate rise (+2.56 pp) split into grade mix (−0.56) and within-grade deterioration (+3.11)</li>
+              <li>Hand-built WoE/IV logistic scorecard; out-of-time PSI 0.001</li>
+              <li>Monotone GBM challenger reviewed against the lender’s own sub-grade: approve as an overlay, not a replacement</li>
+              <li>Post-loan DTI cap of 35 declines 21% of loans that go bad at 20.6% vs 13.3% kept</li>
+              <li>Leakage unit test fails the build if any post-origination field enters a model</li>
+            </ul>
+            <div class="tags"><span>Python</span><span>SQL</span><span>scikit-learn</span><span>pytest</span><span>Tableau</span></div>
+            <div class="links"><a class="btn pri" href="https://github.com/JustASudoNooB/lc-credit-review" target="_blank" rel="noopener">Code &amp; memo ↗</a><a class="btn" href="https://github.com/JustASudoNooB/lc-credit-review/blob/main/reports/RISK_MEMO.md" target="_blank" rel="noopener">Risk memo ↗</a></div>
+          </div>
+          <div class="inst">
+            <div class="ihd"><span class="lab">Cut-off strategy · 2015 loans, out of time</span></div>
+            <div class="cv"><canvas id="cutCv" aria-label="Bad rate against approval rate for three models"></canvas></div>
+            <div class="chips" id="cutModels" role="group" aria-label="Choose a model" style="margin-top:10px">
+              <button class="chip" type="button" data-m="LC sub-grade" aria-pressed="false">LC sub-grade</button>
+              <button class="chip" type="button" data-m="scorecard" aria-pressed="false">My scorecard</button>
+              <button class="chip" type="button" data-m="challenger" aria-pressed="true">GBM challenger</button>
+            </div>
+            <div class="ctl" style="grid-template-columns:1fr"><div><label for="cutAr">Approval rate <output id="cutArO"></output></label><input id="cutAr" type="range" min="50" max="100" step="5" value="80"></div></div>
+            <div class="outs"><div><span>Bad rate</span><b id="cutBad"></b></div><div><span>Net return</span><b id="cutRet"></b></div><div><span>Loans approved</span><b id="cutN"></b></div></div>
+            <div class="gini">
+              <span class="lab">Out-of-time Gini</span>
+              <div class="grow"><span>Sub-grade</span><i style="--w:.357"></i><b>0.357</b></div>
+              <div class="grow"><span>Scorecard</span><i style="--w:.304"></i><b>0.304</b></div>
+              <div class="grow"><span>GBM</span><i style="--w:.341"></i><b>0.341</b></div>
+              <div class="grow hi"><span>Overlay</span><i style="--w:.371"></i><b>0.371</b></div>
+            </div>
+            <p class="fine">Real results from the repo’s outputs. Net return is realised, before fees and funding cost.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:1">
+          <div>
+            <div class="pills"><span class="pill tested">BUILT · 119 TESTS</span><span class="pill build">REAL-DATA RUN NEXT</span></div>
+            <h3>NIFTY Vol Desk</h3>
+            <p class="lead">End-of-day NIFTY options analytics, from NSE’s raw bhavcopy files to a website that shows what option prices imply after every close.</p>
+            <ul>
+              <li>Forwards from put-call parity, Black-76 vols and Greeks on every strike; SVI smiles joined into an arbitrage-checked surface with Dupire local vol</li>
+              <li>India VIX rebuilt from the chain with NSE’s own method; the implied distribution behind a fan of ranges and the odds of any level</li>
+              <li>Black, SABR, Merton, Heston, Bates and local vol fitted each day, then priced on exotics to measure model risk; Heston by COS matches the published benchmark to six decimals</li>
+              <li>Straddle and iron-fly backtests with NSE taxes, slippage and SPAN-style margin, picked in-sample and judged out of sample, with P&amp;L split into theta, gamma and vega</li>
+              <li>A strategy builder, a delta-hedging simulator, a structured-note pricer and the twelve standard pricing models explained in plain language</li>
+            </ul>
+            <div class="tags"><span>Python</span><span>SciPy</span><span>React</span><span>TypeScript</span><span>ECharts</span><span>pytest</span></div>
+            <div class="links"><a class="btn pri" href="https://justasudonoob.github.io/nifty-options-analytics/" target="_blank" rel="noopener">Open the desk ↗</a><a class="btn" href="https://github.com/JustASudoNooB/nifty-options-analytics" target="_blank" rel="noopener">Source ↗</a></div>
+          </div>
+          <div class="inst">
+            <div class="ihd"><span class="lab">What the skew does to the odds</span></div>
+            <div class="cv"><canvas id="nvCv" aria-label="Distribution of NIFTY at expiry implied by a flat smile and by a skewed smile"></canvas></div>
+            <div class="lg"><span><i style="background:var(--accent)"></i>with the skew</span><span style="color:var(--muted)"><i class="d"></i>flat vol</span></div>
+            <div class="ctl">
+              <div><label for="nvVol">At-the-money vol <output id="nvVolO"></output></label><input id="nvVol" type="range" min="8" max="35" step="0.5" value="13"></div>
+              <div><label for="nvSkew">Skew <output id="nvSkewO"></output></label><input id="nvSkew" type="range" min="0" max="80" step="5" value="45"></div>
+              <div><label for="nvDays">Days to expiry <output id="nvDaysO"></output></label><input id="nvDays" type="range" min="7" max="90" step="1" value="30"></div>
+              <div><label for="nvDrop">Fall of at least <output id="nvDropO"></output></label><input id="nvDrop" type="range" min="2" max="15" step="1" value="5"></div>
+            </div>
+            <div class="outs"><div><span>Odds, with skew</span><b id="nvPs"></b></div><div><span>Odds, flat vol</span><b id="nvPf"></b></div><div><span>Expected move</span><b id="nvMove"></b></div></div>
+            <p class="fine">Your parameters on an SSVI smile, the desk’s method: the distribution is the second derivative of call prices across strikes (Breeden–Litzenberger). The site reads the real smile from NSE’s closing prices.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:2">
+          <div>
+            <div class="pills"><span class="pill live">REAL DATA · INDEX LAYER</span><span class="pill tested">TESTED · 30</span></div>
+            <h3>AMRIP indices</h3>
+            <p class="lead">The multi-asset half of my work: not which fund or stock, but which asset classes and how much of each. Its index layer runs two rules-based indices in INR the way an index provider runs them.</p>
+            <ul>
+              <li><b>MAVT</b>: inverse-vol weights on Nifty, Nasdaq-100, gold and G-Secs, scaled to an 8% vol target; 10.7% a year since 2012 at 7.9% realised volatility, worst drawdown −12% against Nifty’s −36%</li>
+              <li><b>XMOM</b>: 12-1 month cross-asset momentum, top two assets, cash when trends turn; 18.5% a year since 2013, Sharpe 0.88</li>
+              <li>Written rulebook, T+1 execution, trading costs and a 50 bp fee charged daily</li>
+              <li>Checks before publication caught missed ETF split adjustments (×10, ×100), stale prints and bars on exchange holidays in the Yahoo data</li>
+              <li>An independent holdings-based recalculation agrees with the published levels on every day of both indices; options on the indices with a delta-hedging study</li>
+            </ul>
+            <div class="tags"><span>Python</span><span>pandas</span><span>yfinance</span><span>pytest</span></div>
+          </div>
+          <div class="inst">
+            <div class="ihd"><span class="lab" id="amTitle">Growth of 100, since 2012</span></div>
+            <div class="cv"><canvas id="amCv" aria-label="MAVT and XMOM index levels against Nifty 50"></canvas></div>
+            <div class="lg"><span><i style="background:var(--accent)"></i>MAVT</span><span><i style="background:var(--accent-2)"></i>XMOM</span><span><i style="background:var(--muted)"></i>Nifty 50</span></div>
+            <div class="chips" id="amChips" role="group" aria-label="View" style="margin-top:12px">
+              <button class="chip" type="button" data-v="growth" aria-pressed="true">Growth</button>
+              <button class="chip" type="button" data-v="dd" aria-pressed="false">Drawdown</button>
+              <button class="chip" type="button" data-v="covid" aria-pressed="false">Covid crash</button>
+              <button class="chip" type="button" data-v="taper" aria-pressed="false">Taper tantrum</button>
+              <button class="chip" type="button" data-v="hikes" aria-pressed="false">2022 rate hikes</button>
+            </div>
+            <div class="outs"><div><span>MAVT</span><b id="amM"></b></div><div><span>XMOM</span><b id="amX"></b></div><div><span>Nifty 50</span><b id="amN"></b></div></div>
+            <p class="fine" id="amNote">Back-calculated on Yahoo Finance closes, after fees and costs. Constituents were chosen with hindsight; the rulebook says so.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:3">
+          <div>
+            <div class="pills"><span class="pill live">REAL NSE DATA</span><span class="pill tested">TESTED · 82</span></div>
+            <h3>nsepipe</h3>
+            <p class="lead">An installable Python library that turns NSE’s daily files into a clean, adjusted, point-in-time stock dataset, and keeps a record of every fix.</p>
+            <ul>
+              <li>2025 backfill: 498 files, 695K stock-days and 3,104 stocks, with histories chained across 60 ISIN changes and 55 renames</li>
+              <li>Found that NSE’s previous-close field is not adjusted for corporate actions, so inferred 139 splits and bonuses from price breaks instead; false moves above 25% fell from 133 to 4</li>
+              <li>20 data-quality checks with source-file lineage caught 10 holiday-dated files carrying stale data and a missed Saturday Budget session</li>
+              <li>DuckDB with SQL views, a point-in-time feature panel with a no-lookahead test, an interactive QC report and CI</li>
+            </ul>
+            <div class="tags"><span>Python</span><span>pandas</span><span>DuckDB</span><span>SQL</span><span>pytest</span></div>
+            <div class="links"><a class="btn pri" href="https://github.com/JustASudoNooB/nsepipe" target="_blank" rel="noopener">Source ↗</a></div>
+          </div>
+          <div class="inst">
+            <div class="ihd"><span class="lab">Split, bonus or a real move?</span></div>
+            <div class="cv" style="aspect-ratio:auto;height:142px"><canvas id="npCv" aria-label="Observed price ratio against standard corporate-action ratios"></canvas></div>
+            <div class="ctl" style="grid-template-columns:1fr"><div><label for="npR">Next open as a share of the last close <output id="npRO"></output></label><input id="npR" type="range" min="7" max="130" step="0.1" value="20.4"></div></div>
+            <div class="chips" id="npChips" style="margin-top:10px">
+              <button class="chip" type="button" data-r="20.4">Split day</button>
+              <button class="chip" type="button" data-r="48.5">Bonus day</button>
+              <button class="chip" type="button" data-r="82">An 18% crash</button>
+              <button class="chip" type="button" data-r="96.5">An ordinary day</button>
+            </div>
+            <div class="verdict" id="npV"></div>
+            <div class="outs"><div><span>Raw move</span><b id="npRaw"></b></div><div><span>Matched ratio</span><b id="npF"></b></div><div><span>Adjusted move</span><b id="npAdj"></b></div></div>
+            <p class="fine">Most NSE stocks are capped at a 20% daily move, so a bigger gap that lands on a standard ratio is almost always a split or bonus. Inside the band, the pipeline checks the announcements before adjusting.</p>
+          </div>
+        </article>
+
+
+        <article class="card" style="--i:4">
+          <div>
+            <div class="pills"><span class="pill tested">TESTED · 171</span></div>
+            <h3>INR Fixed Income Risk Lab</h3>
+            <p class="lead">A ₹100 Cr G-Sec portfolio hedged against a deferred-annuity liability book, from curve fitting to collateral.</p>
+            <ul><li>Nelson-Siegel-Svensson fit at 2.2 bps RMSE</li><li>Key-rate durations from triangular bumps, PCA on yield changes</li><li>Nine full-revaluation scenarios incl. 2013 Taper Tantrum and 2008</li><li>OIS pricing, PV01-neutral hedge, KRD-matched swap ladder by constrained least squares</li><li>Eight limits on a RAG breach monitor, collateral and LCR module</li></ul>
+            <div class="tags"><span>Python</span><span>NumPy</span><span>SciPy</span><span>SQLite</span><span>pytest</span></div>
+          </div>
+          <div class="inst">
+            <span class="lab">GFC 2008 scenario · portfolio P&amp;L</span>
+            <div class="bars" style="margin-top:18px">
+              <div class="bar2"><span>Unhedged</span><div class="track"><i style="right:8%;width:80%;background:var(--loss)"></i><span class="z"></span></div><span class="v neg">−₹27.1 Cr</span></div>
+              <div class="bar2"><span>Swap ladder</span><div class="track"><i style="left:92%;width:2%;background:var(--gain)"></i><span class="z"></span></div><span class="v pos">+₹0.6 Cr</span></div>
+            </div>
+            <div class="outs" style="margin-top:22px"><div><span>Duration gap</span><b>−9.32y</b></div><div><span>Modules</span><b>16</b></div><div><span>Bump-fix variance cut</span><b>99.9%</b></div></div>
+            <p class="fine">Synthetic INR G-Sec data. Try the curve and bond instruments in the Lab below.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:5">
+          <div>
+            <div class="pills"><span class="pill live">LIVE · 121 TESTS</span></div>
+            <h3>MFRIP</h3>
+            <p class="lead">Mutual fund research for Indian investors, deployed and open to anyone.</p>
+            <ul><li>Monte Carlo SIP goal cone (try it)</li><li>Walk-forward, out-of-sample validation of fund rankings</li><li>Capital-gains tax per SIP instalment, 12-month boundary handled</li><li>Calendar-year returns, seed database so it boots offline</li></ul>
+            <div class="tags"><span>Python</span><span>Streamlit</span><span>pandas</span><span>SciPy</span></div>
+            <div class="links"><a class="btn pri" href="https://mfripmain.streamlit.app" target="_blank" rel="noopener">Open the app ↗</a><a class="btn" href="https://github.com/JustASudoNooB/MFRIP" target="_blank" rel="noopener">Source ↗</a></div>
+          </div>
+          <div class="inst">
+            <div class="cv"><canvas id="sipCv" aria-label="SIP goal cone"></canvas></div>
+            <div class="ctl">
+              <div><label for="sipAmt">Monthly SIP <output id="sipAmtO"></output></label><input id="sipAmt" type="range" min="2000" max="100000" step="1000" value="15000"></div>
+              <div><label for="sipYrs">Horizon <output id="sipYrsO"></output></label><input id="sipYrs" type="range" min="3" max="30" step="1" value="15"></div>
+              <div><label for="sipMu">Return <output id="sipMuO"></output></label><input id="sipMu" type="range" min="4" max="16" step="0.5" value="12"></div>
+              <div><label for="sipVol">Volatility <output id="sipVolO"></output></label><input id="sipVol" type="range" min="4" max="28" step="1" value="16"></div>
+            </div>
+            <div class="outs"><div><span>Invested</span><b id="sipInv"></b></div><div><span>Median</span><b id="sipP50"></b></div><div><span>P10–P90</span><b id="sipBand"></b></div></div>
+            <p class="fine">Illustration. Returns are assumptions, not advice.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:6">
+          <div>
+            <div class="pills"><span class="pill live">LIVE · INSTALLABLE</span></div>
+            <h3>Compound</h3>
+            <p class="lead">A daily ledger of promises made and kept. I built it for myself and use it every day on iPhone and iPad.</p>
+            <ul><li>Plan the day, tick tasks off, earn XP, close the day out</li><li>Sticky-note promises, peeled off only when kept</li><li>Goal deadlines on a live departures board</li><li>Compound-growth chart of the habit, with levels</li><li>Offline voice coach, male or female; data never leaves the device</li></ul>
+            <div class="tags"><span>PWA</span><span>JavaScript</span><span>Service worker</span><span>Offline-first</span></div>
+            <div class="links"><a class="btn pri" href="https://justasudonoob.github.io/Compound/" target="_blank" rel="noopener">Open Compound ↗</a><a class="btn" href="https://github.com/JustASudoNooB/Compound" target="_blank" rel="noopener">Source ↗</a></div>
+          </div>
+          <div class="inst">
+            <span class="lab">Why it’s called Compound</span>
+            <div class="cv" style="margin-top:8px"><canvas id="cmpCv" aria-label="Compounding of small daily improvements"></canvas></div>
+            <div class="ctl" style="grid-template-columns:1fr"><div><label for="cmpR">Better each day <output id="cmpRO"></output></label><input id="cmpR" type="range" min="0.1" max="2" step="0.1" value="1"></div></div>
+            <div class="outs"><div><span>After 30 days</span><b id="cmp30"></b></div><div><span>After 100</span><b id="cmp100"></b></div><div><span>After a year</span><b id="cmp365"></b></div></div>
+            <p class="fine">Dashed line: staying flat. 1.01³⁶⁵ ≈ 37.8. The app turns that arithmetic into a daily habit.</p>
+          </div>
+        </article>
+
+        <article class="card" style="--i:7">
+          <div>
+            <div class="pills"><span class="pill build">IN BUILD · 79 TESTS</span></div>
+            <h3>InvoiceIQ</h3>
+            <p class="lead">Invoice extraction and GST compliance checks for small businesses, exporting straight into Tally.</p>
+            <ul><li>Official GSTIN checksum (running beside this)</li><li>GST arithmetic enforced on every line item</li><li>Tesseract OCR, Tally XML and Excel/CSV export, voice-enabled review console</li></ul>
+            <div class="tags"><span>FastAPI</span><span>SQLAlchemy</span><span>Tesseract</span></div>
+          </div>
+          <div class="inst">
+            <label for="gst" class="lab" style="display:block;margin-bottom:8px">Type any GSTIN</label>
+            <input id="gst" class="gst-in" maxlength="15" autocomplete="off" spellcheck="false" value="27AAPFU0939F1ZV">
+            <div class="gst-cells" id="gstCells" aria-hidden="true"></div>
+            <div class="gst-verdict" id="gstV"><i></i><span></span></div>
+            <div class="kv3"><div><span>State</span><b id="gS"></b></div><div><span>PAN · holder</span><b id="gP"></b></div><div><span>Check</span><b id="gC"></b></div></div>
+            <div class="chips" style="margin-top:12px"><button class="chip" type="button" data-gst="27AAPFU0939F1ZV">Valid</button><button class="chip" type="button" data-gst="29AAGCB7383J1Z4">Another valid</button><button class="chip" type="button" data-gst="27AAPFU0939F1ZA">One wrong char</button></div>
+          </div>
+        </article>
+
+        <article class="card" style="--i:8">
+          <div>
+            <div class="pills"><span class="pill build">IN BUILD · 94 TESTS</span></div>
+            <h3>EEIP</h3>
+            <p class="lead">Single-company equity analysis where no number appears without its interpretation, context, limitations and source.</p>
+            <ul><li>Eight engines, from research priority to multibagger potential</li><li>12 financial metrics with conditional caveats</li><li>P/E, P/B, EV/EBITDA and a reverse DCF</li><li>Return decomposition and ROCE fade, validated walk-forward</li></ul>
+            <div class="tags"><span>FastAPI</span><span>React</span><span>TypeScript</span></div>
+          </div>
+          <div class="inst">
+            <span class="lab">How a metric is shown · example</span>
+            <div style="font-size:4.2rem;font-weight:700;letter-spacing:-.05em;line-height:1;margin-top:12px">18.4<span style="font-size:1.6rem;color:var(--muted)">% ROCE</span></div>
+            <div class="outs" style="grid-template-columns:1fr 1fr">
+              <div><span>Interpretation</span><b class="prose">₹18.40 operating profit per ₹100 of capital employed</b></div>
+              <div><span>Context</span><b class="prose">Read against own 5-yr and sector medians</b></div>
+              <div><span>Limitations</span><b class="prose">Year-end capital flatters after late capex</b></div>
+              <div><span>Source</span><b class="prose">Annual report, standalone statements</b></div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+      <div class="also rv"><span class="lab">Also built</span><span class="btn" style="cursor:default">Recon · job-fit Chrome extension <span class="lab" style="margin-left:6px">private</span></span><a class="btn" href="https://grid11.in" target="_blank" rel="noopener">GRID11 ERP · FastAPI ↗</a><a class="btn" href="https://github.com/JustASudoNooB" target="_blank" rel="noopener">Everything on GitHub ↗</a></div>
+    </div>
+  </section>
+
+  <section id="lab" style="padding-top:0">
+    <div class="wrap">
+      <div class="sh rv"><h2>The<br>lab</h2><p>Two instruments from the fixed income lab. Pick a stress scenario for the INR curve, then shock a single bond.</p></div>
+      <div class="lab-grid rv">
+        <div class="inst">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="lab" id="curveName">Base curve</span><button class="chip" type="button" id="curveAuto">Pause</button></div>
+          <div class="cv"><canvas id="curveCv" aria-label="Yield curve stress"></canvas></div>
+          <div class="outs"><div><span>2Y</span><b id="c2"></b></div><div><span>10Y</span><b id="c10"></b></div><div><span>2s10s</span><b id="cs"></b></div></div>
+          <div class="chips" id="curveChips" style="margin-top:12px"></div>
+        </div>
+        <div class="inst">
+          <div class="cv"><canvas id="bondCv" aria-label="Price-yield curve"></canvas></div>
+          <div class="ctl">
+            <div><label for="cpn">Coupon <output id="cpnO"></output></label><input id="cpn" type="range" min="0" max="12" step="0.05" value="7.10"></div>
+            <div><label for="mat">Maturity <output id="matO"></output></label><input id="mat" type="range" min="1" max="40" step="1" value="10"></div>
+            <div><label for="ytm">Yield <output id="ytmO"></output></label><input id="ytm" type="range" min="1" max="14" step="0.01" value="6.70"></div>
+            <div><label for="shk">Shock <output id="shkO"></output></label><input id="shk" type="range" min="-300" max="300" step="5" value="150"></div>
+          </div>
+          <div class="outs"><div><span>Mod. dur</span><b id="oD"></b></div><div><span>P&amp;L / ₹1 Cr</span><b id="oF"></b></div><div><span>Dur-only error</span><b id="oE"></b></div></div>
+          <span hidden id="oP"></span><span hidden id="oC"></span><span hidden id="oDV"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="xp" style="padding-top:0">
+    <div class="wrap">
+      <div class="sh rv"><h2>Experience</h2><p>Each time, a manual process became code someone else can rerun.</p></div>
+      <div class="xp">
+        <div class="r rv"><span class="lab">Jun 2026 – now</span><div><b>Deutsche Bank</b><p>Risk Analyst intern, Enterprise &amp; Treasury Risk Management. Rebuilt credit-loss provisioning as a 13-module Python pipeline across three US entities, tied to control totals exactly, with 34 regression tests; traced a customer-ID mapping that was silently merging separate borrowers. Rebuilt the weekly enterprise risk report as one deterministic script.</p></div><span class="lab">Mumbai</span></div>
+        <div class="r rv"><span class="lab">May – Aug 2024</span><div><b>Areete Business Solutions</b><p>Machine Learning intern. CNN document classifier, 10,000 docs a day at 98% accuracy (from 85%), 60% less manual sorting.</p></div><span class="lab">Remote</span></div>
+        <div class="r rv"><span class="lab">Co-founder</span><div><b>GRID11</b><p>D2C football jersey brand. 2,000+ units sold; built and run the FastAPI ERP.</p></div><a class="lab" href="https://grid11.in" target="_blank" rel="noopener" style="text-decoration:none">grid11.in ↗</a></div>
+        <div class="r rv"><span class="lab">2022 – 2027</span><div><b>BITS Pilani, Hyderabad</b><p>M.Sc. Economics + B.E. Mechanical Engineering, Finance minor. Core member, Wall Street &amp; Traders Club. Bloomberg Market Concepts, Bloomberg Finance Fundamentals, NISM VIII.</p></div><span class="lab">Degree</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact" style="padding-top:0">
+    <div class="wrap">
+      <span class="lab">Open to credit risk, market risk &amp; quant roles</span>
+      <h2>Let’s talk<br><span>risk.</span></h2>
+      <div class="mail"><code id="em">arneymar1973@gmail.com</code><button class="btn pri mag" type="button" data-copy="em">Copy email</button><a class="btn mag" href="https://github.com/JustASudoNooB" target="_blank" rel="noopener">GitHub ↗</a></div>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap"><span>© 2026 Akhand Raj · Mumbai</span><a href="#top" style="text-decoration:none">Back to top ↑</a></div></footer>
+
+<script>
+/* Shared demo engine. Themed by CSS tokens on :root:
+   --fg --muted --line --accent --accent-2 --gain --loss --surface, font --f-mono */
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const mono=()=>css("--f-mono")||"monospace";
+function setup(cv){if(!cv)return null;const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return null;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return{g,W,H};}
+function smooth(g,P){g.moveTo(P[0][0],P[0][1]);for(let i=0;i<P.length-1;i++){const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;g.bezierCurveTo(p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6,p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6,p2[0],p2[1]);}}
+const inrShort=v=>{const a=Math.abs(v),s=v<0?"−":"";if(a>=1e7)return s+"₹"+(a/1e7).toFixed(2)+" Cr";if(a>=1e5)return s+"₹"+(a/1e5).toFixed(1)+" L";return s+"₹"+Math.round(a).toLocaleString("en-IN");};
+const inrSigned=v=>(v<0?"−":"+")+"₹"+Math.abs(v).toLocaleString("en-IN",{maximumFractionDigits:0});
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());}
+const set=(id,t)=>{const e=$(id);if(e)e.textContent=t;};
+const drawers=[];
+
+/* ---------- Yield curve stress ---------- */
+const TEN=[0.25,0.5,1,2,3,5,7,10,15,30],TLAB={0.25:"3M",1:"1Y",2:"2Y",5:"5Y",10:"10Y",30:"30Y"};
+const BASE=[5.55,5.65,5.80,5.95,6.05,6.25,6.40,6.55,6.75,6.95];
+const SCEN=[
+ {n:"Base curve",k:"Base",f:()=>0},
+ {n:"Parallel +100 bp",k:"+100 parallel",f:()=>100},
+ {n:"Bear flattener",k:"Bear flattener",f:t=>60+190*Math.exp(-t/2)},
+ {n:"Bull steepener",k:"Bull steepener",f:t=>-(55+200*Math.exp(-t/2.5))},
+ {n:"Twist",k:"Twist",f:t=>-60+120*(Math.sqrt(t)-0.5)/(Math.sqrt(30)-0.5)}];
+function curve(){
+ const cv=$("curveCv");if(!cv)return;
+ let cur=BASE.slice(),si=0,auto=!reduce,timer=null,anim=null;
+ const chips=$("curveChips");
+ if(chips)SCEN.forEach((s,i)=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=s.k;b.setAttribute("aria-pressed",String(i===0));b.addEventListener("click",()=>{setAuto(false);go(i);});chips.appendChild(b);});
+ function draw(){
+  const c=setup(cv);if(!c)return;const{g,W,H}=c,L=38,R=8,T=10,B=24,ymin=3,ymax=9.5;
+  const sx=t=>L+(Math.sqrt(t)-0.5)/(Math.sqrt(30)-0.5)*(W-L-R),sy=v=>T+(ymax-v)/(ymax-ymin)*(H-T-B);
+  g.font="10.5px "+mono();g.lineWidth=1;
+  for(let v=4;v<=9;v++){g.strokeStyle=css("--line");g.beginPath();g.moveTo(L,sy(v));g.lineTo(W-R,sy(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(v+"%",L-7,sy(v));}
+  g.textAlign="center";g.textBaseline="top";g.fillStyle=css("--muted");Object.keys(TLAB).forEach(t=>g.fillText(TLAB[t],sx(+t),H-B+8));
+  const bp=BASE.map((v,j)=>[sx(TEN[j]),sy(v)]),cp=cur.map((v,j)=>[sx(TEN[j]),sy(v)]);
+  g.beginPath();smooth(g,cp);for(let j=bp.length-1;j>=0;j--)g.lineTo(bp[j][0],bp[j][1]);g.closePath();g.fillStyle=css("--accent");g.globalAlpha=.14;g.fill();g.globalAlpha=1;
+  g.setLineDash([4,4]);g.strokeStyle=css("--muted");g.lineWidth=1.2;g.beginPath();smooth(g,bp);g.stroke();g.setLineDash([]);
+  g.strokeStyle=css("--accent");g.lineWidth=2.4;g.beginPath();smooth(g,cp);g.stroke();
+  cp.forEach(p=>{g.fillStyle=css("--surface");g.beginPath();g.arc(p[0],p[1],3.4,0,7);g.fill();g.strokeStyle=css("--accent");g.lineWidth=1.5;g.stroke();});
+  const fmt=d=>(d>=0?"+":"−")+Math.abs(Math.round(d))+" bp";
+  const y2=cur[3],y10=cur[7],sp=(y10-y2)*100;
+  set("curveName",SCEN[si].n);set("c2",y2.toFixed(2)+"%");set("c10",y10.toFixed(2)+"%");set("cs",Math.round(sp)+" bp");
+  set("c10d",Math.abs((y10-BASE[7])*100)<.5?"±0 bp":fmt((y10-BASE[7])*100));
+ }
+ function go(i){si=i;if(chips)[...chips.children].forEach((b,j)=>b.setAttribute("aria-pressed",String(j===i)));
+  const tg=BASE.map((y,j)=>y+SCEN[i].f(TEN[j])/100),from=cur.slice(),t0=performance.now(),D=reduce?0:900;cancelAnimationFrame(anim);
+  const step=now=>{const p=D?Math.min(1,(now-t0)/D):1,e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;cur=from.map((v,j)=>v+(tg[j]-v)*e);draw();if(p<1)anim=requestAnimationFrame(step);};anim=requestAnimationFrame(step);}
+ function setAuto(on){auto=on;set("curveAuto",on?"Pause":"Auto-play");clearInterval(timer);if(on)timer=setInterval(()=>go((si+1)%SCEN.length),3800);}
+ const ab=$("curveAuto");if(ab)ab.addEventListener("click",()=>setAuto(!auto));
+ drawers.push(draw);go(0);setAuto(auto);
+}
+
+/* ---------- Bond lab ---------- */
+function price(c,T,y){const n=Math.max(1,Math.round(T*2)),cp=c/2,r=y/200;let p=0;for(let k=1;k<=n;k++)p+=cp/Math.pow(1+r,k);return p+100/Math.pow(1+r,n);}
+function bond(){
+ if(!$("bondCv"))return;
+ function run(){
+  const c=+$("cpn").value,T=+$("mat").value,y=+$("ytm").value,s=+$("shk").value;
+  set("cpnO",c.toFixed(2)+"%");set("matO",T+" yrs");set("ytmO",y.toFixed(2)+"%");set("shkO",(s>0?"+":"")+s+" bp");
+  const h=.01,p0=price(c,T,y),pu=price(c,T,y+h),pd=price(c,T,y-h),D=(pd-pu)/(2*p0*h/100),C=(pu+pd-2*p0)/(p0*Math.pow(h/100,2));
+  const face=1e7,ps=price(c,T,y+s/100),full=(ps-p0)/100*face,durOnly=-D*(s/1e4)*p0/100*face;
+  set("oP",p0.toFixed(3));set("oD",D.toFixed(2));set("oC",C.toFixed(1));set("oDV","₹"+Math.round(D*p0/100*face*1e-4).toLocaleString("en-IN"));
+  set("oF",inrSigned(full));const of=$("oF");if(of)of.className=full<0?"neg":"pos";set("oE",inrSigned(durOnly-full));
+  const cv=setup($("bondCv"));if(!cv)return;const{g,W,H}=cv,L=42,R=8,Tp=10,B=24,y0=Math.max(.25,y-4),y1=y+4,pts=[];
+  for(let i=0;i<=120;i++){const yy=y0+(y1-y0)*i/120;pts.push([yy,price(c,T,yy)]);}
+  const tan=yy=>p0*(1-D*(yy-y)/100);let pmin=Math.min(...pts.map(p=>p[1]),tan(y1)),pmax=Math.max(...pts.map(p=>p[1]),tan(y0));const pad=(pmax-pmin)*.06;pmin-=pad;pmax+=pad;
+  const X=v=>L+(v-y0)/(y1-y0)*(W-L-R),Y=v=>Tp+(pmax-v)/(pmax-pmin)*(H-Tp-B);g.font="10.5px "+mono();
+  for(let i=0;i<=4;i++){const v=pmin+(pmax-pmin)*i/4;g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,Y(v));g.lineTo(W-R,Y(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(v.toFixed(0),L-7,Y(v));}
+  g.textAlign="center";g.textBaseline="top";for(let v=Math.ceil(y0);v<=Math.floor(y1);v++)g.fillText(v+"%",X(v),H-B+8);
+  g.strokeStyle=css("--accent-2");g.lineWidth=1.5;g.setLineDash([5,4]);g.beginPath();g.moveTo(X(y0),Y(tan(y0)));g.lineTo(X(y1),Y(tan(y1)));g.stroke();g.setLineDash([]);
+  g.strokeStyle=css("--fg");g.lineWidth=2;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1])));g.stroke();
+  const ys=y+s/100;if(ys>=y0&&ys<=y1){g.strokeStyle=css("--accent");g.lineWidth=1;g.beginPath();g.moveTo(X(ys),Tp);g.lineTo(X(ys),H-B);g.stroke();g.strokeStyle=css("--loss");g.lineWidth=3;g.beginPath();g.moveTo(X(ys),Y(ps));g.lineTo(X(ys),Y(tan(ys)));g.stroke();g.fillStyle=css("--accent");g.beginPath();g.arc(X(ys),Y(ps),5,0,7);g.fill();}
+  g.fillStyle=css("--fg");g.beginPath();g.arc(X(y),Y(p0),4.5,0,7);g.fill();
+ }
+ ["cpn","mat","ytm","shk"].forEach(id=>$(id).addEventListener("input",run));
+ document.querySelectorAll("[data-shock]").forEach(b=>b.addEventListener("click",()=>{$("shk").value=b.dataset.shock;run();}));
+ drawers.push(run);run();
+}
+
+/* ---------- SIP cone ---------- */
+function sip(){
+ if(!$("sipCv"))return;
+ function run(){
+  const A=+$("sipAmt").value,Y=+$("sipYrs").value,mu=+$("sipMu").value/100,vol=+$("sipVol").value/100;
+  set("sipAmtO","₹"+A.toLocaleString("en-IN"));set("sipYrsO",Y+" yrs");set("sipMuO",(mu*100).toFixed(1).replace(".0","")+"%");set("sipVolO",Math.round(vol*100)+"%");
+  const M=Y*12,P=400,r=rng(42),dm=Math.log(1+mu)/12-vol*vol/24,sm=vol/Math.sqrt(12),val=new Float64Array(P),q=[[],[],[]],paths=[];
+  for(let p=0;p<P;p++)paths.push(p<14?[0]:null);
+  for(let m=1;m<=M;m++){const col=new Float64Array(P);for(let p=0;p<P;p++){val[p]=(val[p]+A)*Math.exp(dm+sm*gauss(r));col[p]=val[p];if(paths[p])paths[p].push(val[p]);}const s=Array.from(col).sort((a,b)=>a-b);q[0].push(s[40]);q[1].push(s[200]);q[2].push(s[360]);}
+  set("sipInv",inrShort(A*M));set("sipP50",inrShort(q[1][M-1]));set("sipBand",inrShort(q[0][M-1])+" – "+inrShort(q[2][M-1]));
+  const c=setup($("sipCv"));if(!c)return;const{g,W,H}=c,L=52,R=8,T=10,B=24,vmax=q[2][M-1]*1.08,sx=m=>L+m/M*(W-L-R),sy=v=>T+(1-v/vmax)*(H-T-B);g.font="10.5px "+mono();
+  for(let i=0;i<=4;i++){const v=vmax*i/4;g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,sy(v));g.lineTo(W-R,sy(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(inrShort(v).replace("₹",""),L-7,sy(v));}
+  g.textAlign="center";g.textBaseline="top";const st=Y<=10?2:Y<=20?5:10;for(let y=0;y<=Y;y+=st)g.fillText(y+"y",sx(y*12),H-B+8);
+  paths.forEach(p=>{if(!p)return;g.strokeStyle=css("--muted");g.globalAlpha=.2;g.lineWidth=1;g.beginPath();p.forEach((v,m)=>m?g.lineTo(sx(m),sy(v)):g.moveTo(sx(0),sy(0)));g.stroke();});g.globalAlpha=1;
+  g.beginPath();g.moveTo(sx(0),sy(0));q[2].forEach((v,m)=>g.lineTo(sx(m+1),sy(v)));for(let m=M-1;m>=0;m--)g.lineTo(sx(m+1),sy(q[0][m]));g.closePath();g.fillStyle=css("--accent-2");g.globalAlpha=.16;g.fill();g.globalAlpha=1;
+  g.strokeStyle=css("--accent");g.lineWidth=2.2;g.beginPath();g.moveTo(sx(0),sy(0));q[1].forEach((v,m)=>g.lineTo(sx(m+1),sy(v)));g.stroke();
+  g.strokeStyle=css("--fg");g.globalAlpha=.6;g.setLineDash([4,4]);g.lineWidth=1.2;g.beginPath();g.moveTo(sx(0),sy(0));g.lineTo(sx(M),sy(A*M));g.stroke();g.setLineDash([]);g.globalAlpha=1;
+ }
+ ["sipAmt","sipYrs","sipMu","sipVol"].forEach(id=>$(id).addEventListener("input",run));drawers.push(run);run();
+}
+
+/* ---------- GSTIN ---------- */
+const AL="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const ST={"01":"Jammu & Kashmir","02":"Himachal Pradesh","03":"Punjab","04":"Chandigarh","05":"Uttarakhand","06":"Haryana","07":"Delhi","08":"Rajasthan","09":"Uttar Pradesh","10":"Bihar","11":"Sikkim","12":"Arunachal Pradesh","13":"Nagaland","14":"Manipur","15":"Mizoram","16":"Tripura","17":"Meghalaya","18":"Assam","19":"West Bengal","20":"Jharkhand","21":"Odisha","22":"Chhattisgarh","23":"Madhya Pradesh","24":"Gujarat","26":"Dadra & Nagar Haveli and Daman & Diu","27":"Maharashtra","29":"Karnataka","30":"Goa","31":"Lakshadweep","32":"Kerala","33":"Tamil Nadu","34":"Puducherry","35":"Andaman & Nicobar","36":"Telangana","37":"Andhra Pradesh","38":"Ladakh","97":"Other Territory"};
+const PT={P:"Individual",C:"Company",H:"HUF",F:"Firm / LLP",A:"AOP",T:"Trust",B:"BOI",L:"Local authority",J:"Artificial juridical person",G:"Government"};
+function chk(s){let t=0;for(let i=0;i<14;i++){const p=AL.indexOf(s[i])*(i%2?2:1);t+=Math.floor(p/36)+p%36;}return AL[(36-t%36)%36];}
+function gst(){
+ const inp=$("gst");if(!inp)return;
+ function run(){
+  const s=inp.value.toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,15);if(inp.value!==s)inp.value=s;
+  const cells=$("gstCells");if(cells){cells.innerHTML="";const exp=s.length>=14?chk(s):null;for(let i=0;i<15;i++){const e=document.createElement("span");e.textContent=s[i]||"·";e.className=i<2?"g-state":i<12?"g-pan":i<14?"g-ent":"g-chk";if(i===14&&s.length===15&&s[14]!==exp)e.className="g-bad";cells.appendChild(e);}}
+  const ok=/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(s),exp=s.length>=14?chk(s):null,v=$("gstV");
+  set("gS",s.length>=2?(ST[s.slice(0,2)]||"Unknown code "+s.slice(0,2)):"–");set("gP",s.length>=12?s.slice(2,12)+" · "+(PT[s[5]]||"type "+s[5]):"–");set("gC",exp?(s[14]?s[14]+" (expected "+exp+")":"expected "+exp):"–");
+  let cls="",msg="";if(s.length<15)msg=(15-s.length)+" characters to go";else if(!ok){cls="bad";msg="Wrong format for a GSTIN";}else if(s[14]!==exp){cls="bad";msg="Checksum fails: last character should be "+exp;}else if(!ST[s.slice(0,2)]){cls="bad";msg="Checksum passes, but the state code is not recognised";}else{cls="ok";msg="Checksum passes";}
+  if(v){v.className="gst-verdict "+cls;v.lastElementChild.textContent=msg;}
+ }
+ inp.addEventListener("input",run);document.querySelectorAll("[data-gst]").forEach(b=>b.addEventListener("click",()=>{inp.value=b.dataset.gst;run();}));run();
+}
+
+/* ---------- copy email ---------- */
+function copy(){document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>{const src=$(b.dataset.copy),t=src.textContent.trim(),orig=b.textContent;
+ const ok=()=>{b.textContent="Copied";setTimeout(()=>b.textContent=orig,1800);};
+ const sel=()=>{const r=document.createRange();r.selectNodeContents(src);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Selected, press Ctrl+C";setTimeout(()=>b.textContent=orig,2400);};
+ try{navigator.clipboard.writeText(t).then(ok,sel);}catch(e){sel();}}));}
+
+function all(){drawers.forEach(f=>{try{f();}catch(e){}});}
+window.Demos={redraw:all,css,setup,reduce};
+function init(){curve();bond();sip();gst();copy();
+ let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(all,80);});
+ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",all);}catch(e){}
+ new MutationObserver(all).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+ if(document.fonts)document.fonts.ready.then(all);}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+})();
+
+(function(){
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* curve field */
+  const cv=document.getElementById("field");const g=cv.getContext("2d");let W=0,H=0,dpr=1,mx=-1e4,my=-1e4,tmx=-1e4,tmy=-1e4,t0=performance.now();
+  function size(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);}
+  size();window.addEventListener("resize",size);
+  cv.parentElement.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect();tmx=e.clientX-r.left;tmy=e.clientY-r.top;});
+  cv.parentElement.addEventListener("pointerleave",()=>{tmx=-1e4;tmy=-1e4;});
+  const N=26;
+  function frame(now){
+    const t=(now-t0)/1000;mx+=(tmx-mx)*.08;my+=(tmy-my)*.08;
+    g.clearRect(0,0,W,H);
+    for(let k=0;k<N;k++){
+      const f=k/(N-1),base=H*.12+f*H*.62;
+      g.beginPath();
+      for(let i=0;i<=80;i++){
+        const x=i/80*W,u=Math.sqrt(i/80);
+        let y=base-H*.16*u*(0.6+0.4*Math.sin(t*.35+k*.42))+Math.sin(i*.09+t*.8+k*.6)*4;
+        const dx=x-mx,dy=y-my,d2=dx*dx+dy*dy,inf=Math.exp(-d2/(2*120*120));
+        y+= -dy*inf*.55;
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      const hot=k===Math.round(N*.55);
+      g.strokeStyle=hot?"#FFC567":"rgba(154,215,255,"+(0.08+0.22*(1-Math.abs(f-.5)*1.6))+")";
+      g.lineWidth=hot?2:1;g.stroke();
+    }
+    if(!reduce)requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  /* reveal (starts visible-ish, never hidden) */
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove("pre");io.unobserve(e.target);}}),{rootMargin:"0px 0px -8% 0px"});
+  document.querySelectorAll(".rv").forEach(el=>{const r=el.getBoundingClientRect();if(r.top>innerHeight){el.classList.add("pre");io.observe(el);}});
+  /* progress */
+  const p=document.getElementById("prog");addEventListener("scroll",()=>{const h=document.documentElement,m=h.scrollHeight-h.clientHeight;p.style.width=(m>0?h.scrollTop/m*100:0)+"%";},{passive:true});
+  /* magnetic buttons */
+  if(!reduce&&matchMedia("(pointer:fine)").matches)document.querySelectorAll(".mag").forEach(b=>{b.addEventListener("pointermove",e=>{const r=b.getBoundingClientRect();b.style.transform="translate("+((e.clientX-r.left-r.width/2)*.18)+"px,"+((e.clientY-r.top-r.height/2)*.25)+"px)";});b.addEventListener("pointerleave",()=>b.style.transform="");});
+})();
+</script>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const D=window.Demos; if(!D) return;
+  const CUT={"LC sub-grade":[[0.5,8.26,7.15,141394],[0.55,8.86,7.16,155533],[0.6,9.47,7.16,169672],[0.65,10.04,7.15,183812],[0.7,10.65,7.1,197951],[0.75,11.25,7.07,212090],[0.8,11.88,7.03,226230],[0.85,12.51,6.97,240369],[0.9,13.17,6.9,254508],[0.95,13.92,6.79,268648],[1.0,14.88,6.55,282787]],"scorecard":[[0.5,9.35,7.4,141394],[0.55,9.84,7.36,155533],[0.6,10.38,7.27,169672],[0.65,10.83,7.24,183812],[0.7,11.33,7.17,197951],[0.75,11.86,7.1,212090],[0.8,12.38,7.03,226230],[0.85,12.89,6.96,240369],[0.9,13.49,6.82,254508],[0.95,14.11,6.71,268648],[1.0,14.88,6.55,282787]],"challenger":[[0.5,8.7,7.69,141394],[0.55,9.23,7.63,155533],[0.6,9.76,7.57,169672],[0.65,10.32,7.52,183812],[0.7,10.84,7.46,197951],[0.75,11.42,7.33,212090],[0.8,11.98,7.25,226230],[0.85,12.59,7.12,240369],[0.9,13.24,6.99,254508],[0.95,13.98,6.81,268648],[1.0,14.88,6.55,282787]]};
+  const COL={"LC sub-grade":"--muted","scorecard":"--accent-2","challenger":"--accent"};
+  let model="challenger";
+  const chips=[...document.querySelectorAll("#cutModels [data-m]")];
+  chips.forEach(b=>b.addEventListener("click",()=>{model=b.dataset.m;chips.forEach(c=>c.setAttribute("aria-pressed",String(c===b)));cut();}));
+  function cut(){
+    const ar=+$("cutAr").value/100,i=Math.round((ar-0.5)/0.05),row=CUT[model][i],base=CUT["LC sub-grade"][i];
+    $("cutArO").textContent=Math.round(ar*100)+"%";
+    const d=row[1]-base[1];
+    $("cutBad").innerHTML=row[1].toFixed(2)+"%"+(model==="LC sub-grade"?"":' <small style="color:var('+(d<=0?"--gain":"--loss")+')">'+(d>0?"+":"−")+Math.abs(d).toFixed(2)+"</small>");
+    $("cutRet").textContent=row[2].toFixed(2)+"%";
+    $("cutN").textContent=row[3].toLocaleString("en-US");
+    const c=D.setup($("cutCv"));if(!c)return;const{g,W,H}=c,L=40,R=20,T=10,B=24,css=D.css;
+    const sx=a=>L+(a-0.5)/0.5*(W-L-R),sy=v=>T+(15.5-v)/(15.5-7.5)*(H-T-B);
+    g.font="10.5px "+css("--f-mono");
+    [8,10,12,14].forEach(v=>{g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,sy(v));g.lineTo(W-R,sy(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(v+"%",L-7,sy(v));});
+    g.textAlign="center";g.textBaseline="top";[0.5,0.6,0.7,0.8,0.9,1].forEach(a=>g.fillText(Math.round(a*100)+"%",sx(a),H-B+8));
+    Object.keys(CUT).forEach(m=>{const on=m===model;g.strokeStyle=css(COL[m]);g.globalAlpha=on?1:.45;g.lineWidth=on?2.6:1.3;g.beginPath();CUT[m].forEach((r,k)=>k?g.lineTo(sx(r[0]),sy(r[1])):g.moveTo(sx(r[0]),sy(r[1])));g.stroke();});
+    g.globalAlpha=1;
+    g.strokeStyle=css("--fg");g.globalAlpha=.35;g.setLineDash([3,4]);g.beginPath();g.moveTo(sx(ar),T);g.lineTo(sx(ar),H-B);g.stroke();g.setLineDash([]);g.globalAlpha=1;
+    g.fillStyle=css(COL[model]);g.beginPath();g.arc(sx(ar),sy(row[1]),5,0,7);g.fill();
+    g.fillStyle=css("--muted");g.textAlign="left";g.textBaseline="top";g.fillText("bad rate ↑ as you approve more",L+6,T+2);
+  }
+  function cmp(){
+    const r=+$("cmpR").value/100;$("cmpRO").textContent=(r*100).toFixed(1)+"%";
+    const f=n=>Math.pow(1+r,n);$("cmp30").textContent=f(30).toFixed(2)+"×";$("cmp100").textContent=f(100).toFixed(2)+"×";$("cmp365").textContent=f(365).toFixed(1)+"×";
+    const c=D.setup($("cmpCv"));if(!c)return;const{g,W,H}=c,L=40,R=20,T=10,B=24,css=D.css,ymax=Math.max(2,f(365)*1.08);
+    const sx=d=>L+d/365*(W-L-R),sy=v=>T+(1-v/ymax)*(H-T-B);
+    g.font="10.5px "+css("--f-mono");
+    const st=ymax>200?100:ymax>80?20:ymax>30?10:ymax>12?5:ymax>5?2:0.5,ticks=[];for(let v=0;v<=ymax;v+=st)ticks.push(+v.toFixed(1));
+    ticks.forEach(v=>{g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,sy(v));g.lineTo(W-R,sy(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(v+"×",L-7,sy(v));});
+    g.textAlign="center";g.textBaseline="top";[0,90,180,270,365].forEach(d=>g.fillText(d+"d",sx(d),H-B+8));
+    g.beginPath();g.moveTo(sx(0),sy(0));for(let d=0;d<=365;d+=3)g.lineTo(sx(d),sy(f(d)));g.lineTo(sx(365),sy(0));g.closePath();g.fillStyle=css("--accent-2");g.globalAlpha=.14;g.fill();g.globalAlpha=1;
+    g.strokeStyle=css("--accent-2");g.lineWidth=2.4;g.beginPath();for(let d=0;d<=365;d+=3)d?g.lineTo(sx(d),sy(f(d))):g.moveTo(sx(0),sy(1));g.stroke();
+    g.strokeStyle=css("--muted");g.setLineDash([4,4]);g.lineWidth=1.2;g.beginPath();g.moveTo(sx(0),sy(1));g.lineTo(sx(365),sy(1));g.stroke();g.setLineDash([]);
+  }
+  $("cutAr").addEventListener("input",cut);$("cmpR").addEventListener("input",cmp);
+  function all(){cut();cmp();}
+  all();let t;addEventListener("resize",()=>{clearTimeout(t);t=setTimeout(all,90);});
+  if(document.fonts)document.fonts.ready.then(all);
+})();
+</script>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const D=window.Demos; if(!D) return;
+  const css=D.css;
+  const mono=()=>css("--f-mono")||"monospace";
+  const N=x=>{const t=1/(1+0.2316419*Math.abs(x)),d=0.3989422804*Math.exp(-x*x/2),p=d*t*(0.31938153+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));return x>0?1-p:p;};
+  const black=(F,K,T,s)=>{const v=s*Math.sqrt(T),d1=(Math.log(F/K)+.5*v*v)/v;return F*N(d1)-K*N(d1-v);};
+  const pct=(v,d=1)=>(v<0?"−":"")+Math.abs(v*100).toFixed(d)+"%";
+
+  /* ---------- NIFTY: skew and the implied distribution ---------- */
+  function nifty(){
+    if(!$("nvCv"))return;
+    const s0=+$("nvVol").value/100,rho=-$("nvSkew").value/100,days=+$("nvDays").value,drop=+$("nvDrop").value/100,T=days/365,F=100;
+    // SSVI smile (Gatheral and Jacquier): arbitrage-free for these parameters
+    const th=s0*s0*T,phi=1/Math.sqrt(th);
+    const Wk=k=>{const u=phi*k+rho,R=Math.sqrt(u*u+1-rho*rho);return[th/2*(1+rho*phi*k+R),th/2*(rho*phi+phi*u/R),th/2*phi*phi*(1-rho*rho)/(R*R*R)];};
+    const sig=k=>Math.sqrt(Wk(k)[0]/T),dsig=k=>{const w=Wk(k);return w[1]/(2*Math.sqrt(w[0]/T)*T);};
+    $("nvVolO").textContent=(s0*100).toFixed(1)+"%";$("nvSkewO").textContent="+"+((sig(Math.log(0.9))-s0)*100).toFixed(1)+" pts at −10%";$("nvDaysO").textContent=days+"d";$("nvDropO").textContent=Math.round(drop*100)+"%";
+    const npdf=x=>Math.exp(-.5*x*x)/Math.sqrt(2*Math.PI);
+    // exact density from total variance w (Gatheral's g function)
+    const dens=K=>{const k=Math.log(K/F),[w,w1,w2]=Wk(k),sw=Math.sqrt(w),d2=-k/sw-sw/2;
+      const gk=(1-k*w1/(2*w))**2-(w1*w1/4)*(1/w+1/4)+w2/2;return Math.max(gk,0)*npdf(d2)/(K*sw);};
+    const C=K=>black(F,K,T,sig(Math.log(K/F)));
+    const sd=s0*Math.sqrt(T),lo=F*Math.exp(-5.5*sd),hi=F*Math.exp(4*sd),n=240;
+    const xs=[],ds=[],fs=[];
+    for(let i=0;i<=n;i++){const K=lo+(hi-lo)*i/n;xs.push(K);ds.push(dens(K));
+      const z=(Math.log(K/F)+.5*sd*sd)/sd;fs.push(Math.exp(-.5*z*z)/(K*sd*Math.sqrt(2*Math.PI)));}
+    const Kd=F*(1-drop),kd=Math.log(Kd/F),svd=sig(kd),swd=svd*Math.sqrt(T),d1d=-kd/swd+swd/2;
+    // P(S_T < K) = N(-d2) + F n(d1) sqrt(T) sigma'(k) / K   (the skew term)
+    const pS=N(-(d1d-swd))+F*npdf(d1d)*Math.sqrt(T)*dsig(kd)/Kd,pF=N((Math.log(Kd/F)+.5*sd*sd)/sd);
+    $("nvPs").textContent=pct(Math.min(Math.max(pS,0),1));$("nvPf").textContent=pct(pF);
+    $("nvMove").textContent="±"+(2*C(F)/F*100).toFixed(1)+"%";
+    const c=D.setup($("nvCv"));if(!c)return;const{g:ctx,W,H}=c,L=12,R=12,Tp=12,B=24;
+    const ymax=Math.max(...ds,...fs)*1.08,X=K=>L+(K-lo)/(hi-lo)*(W-L-R),Y=v=>Tp+(1-v/ymax)*(H-Tp-B);
+    ctx.font="10.5px "+mono();ctx.fillStyle=css("--muted");ctx.textAlign="center";ctx.textBaseline="top";
+    const step=sd>0.06?10:sd>0.03?5:2;
+    for(let m=-40;m<=40;m+=step){const K=F*(1+m/100);if(K<lo||K>hi)continue;ctx.strokeStyle=css("--line");ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(K),Tp);ctx.lineTo(X(K),H-B);ctx.stroke();ctx.fillText(m===0?"today":(m>0?"+":"−")+Math.abs(m)+"%",X(K),H-B+8);}
+    // shaded tail below the drop
+    ctx.beginPath();ctx.moveTo(X(xs[0]),Y(0));xs.forEach((K,i)=>{if(K<=Kd)ctx.lineTo(X(K),Y(ds[i]));});ctx.lineTo(X(Math.min(Kd,hi)),Y(0));ctx.closePath();ctx.fillStyle=css("--loss");ctx.globalAlpha=.35;ctx.fill();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.moveTo(X(xs[0]),Y(0));xs.forEach((K,i)=>ctx.lineTo(X(K),Y(ds[i])));ctx.lineTo(X(xs[n]),Y(0));ctx.closePath();ctx.fillStyle=css("--accent");ctx.globalAlpha=.13;ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle=css("--accent");ctx.lineWidth=2.2;ctx.beginPath();xs.forEach((K,i)=>i?ctx.lineTo(X(K),Y(ds[i])):ctx.moveTo(X(K),Y(ds[i])));ctx.stroke();
+    ctx.strokeStyle=css("--muted");ctx.setLineDash([4,4]);ctx.lineWidth=1.3;ctx.beginPath();xs.forEach((K,i)=>i?ctx.lineTo(X(K),Y(fs[i])):ctx.moveTo(X(K),Y(fs[i])));ctx.stroke();ctx.setLineDash([]);
+    if(Kd>lo){ctx.strokeStyle=css("--loss");ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(Kd),Tp);ctx.lineTo(X(Kd),H-B);ctx.stroke();
+      ctx.fillStyle=css("--loss");ctx.textAlign="right";ctx.textBaseline="top";ctx.fillText("−"+Math.round(drop*100)+"% or worse",X(Kd)-6,Tp+2);}
+  }
+  ["nvVol","nvSkew","nvDays","nvDrop"].forEach(id=>$(id)&&$(id).addEventListener("input",nifty));
+
+  /* ---------- AMRIP: index levels ---------- */
+  const AM={"d":["2012-05-03","2012-05-10","2012-05-17","2012-05-24","2012-05-31","2012-06-07","2012-06-14","2012-06-21","2012-06-28","2012-07-05","2012-07-12","2012-07-19","2012-07-26","2012-08-02","2012-08-09","2012-08-17","2012-08-27","2012-09-03","2012-09-10","2012-09-17","2012-09-25","2012-10-03","2012-10-10","2012-10-17","2012-10-25","2012-11-02","2012-11-09","2012-11-20","2012-11-27","2012-12-05","2012-12-12","2012-12-19","2012-12-27","2013-01-03","2013-01-10","2013-01-17","2013-01-24","2013-01-31","2013-02-07","2013-02-14","2013-02-21","2013-02-28","2013-03-07","2013-03-14","2013-03-21","2013-04-01","2013-04-08","2013-04-15","2013-04-23","2013-05-02","2013-05-09","2013-05-16","2013-05-23","2013-05-30","2013-06-06","2013-06-13","2013-06-20","2013-06-27","2013-07-04","2013-07-11","2013-07-18","2013-07-25","2013-08-01","2013-08-08","2013-08-19","2013-08-26","2013-09-02","2013-09-10","2013-09-17","2013-09-24","2013-10-01","2013-10-09","2013-10-17","2013-10-24","2013-10-31","2013-11-08","2013-11-18","2013-11-25","2013-12-02","2013-12-09","2013-12-16","2013-12-23","2013-12-31","2014-01-07","2014-01-14","2014-01-21","2014-01-28","2014-02-04","2014-02-11","2014-02-18","2014-02-25","2014-03-05","2014-03-12","2014-03-20","2014-03-27","2014-04-03","2014-04-11","2014-04-22","2014-04-30","2014-05-08","2014-05-15","2014-05-22","2014-05-29","2014-06-05","2014-06-12","2014-06-19","2014-06-26","2014-07-03","2014-07-10","2014-07-17","2014-07-24","2014-08-01","2014-08-08","2014-08-18","2014-08-25","2014-09-02","2014-09-09","2014-09-16","2014-09-23","2014-09-30","2014-10-10","2014-10-20","2014-10-29","2014-11-07","2014-11-14","2014-11-21","2014-11-28","2014-12-05","2014-12-12","2014-12-19","2014-12-29","2015-01-05","2015-01-12","2015-01-19","2015-01-27","2015-02-03","2015-02-10","2015-02-18","2015-02-25","2015-03-04","2015-03-12","2015-03-19","2015-03-26","2015-04-06","2015-04-13","2015-04-21","2015-04-28","2015-05-06","2015-05-13","2015-05-20","2015-05-27","2015-06-03","2015-06-10","2015-06-17","2015-06-24","2015-07-01","2015-07-08","2015-07-15","2015-07-22","2015-07-29","2015-08-05","2015-08-12","2015-08-19","2015-08-26","2015-09-02","2015-09-09","2015-09-16","2015-09-24","2015-10-05","2015-10-12","2015-10-19","2015-10-27","2015-11-03","2015-11-10","2015-11-19","2015-11-27","2015-12-04","2015-12-11","2015-12-18","2015-12-28","2016-01-04","2016-01-11","2016-01-18","2016-01-25","2016-02-02","2016-02-09","2016-02-16","2016-02-23","2016-03-01","2016-03-09","2016-03-16","2016-03-23","2016-04-01","2016-04-08","2016-04-20","2016-04-27","2016-05-04","2016-05-11","2016-05-18","2016-05-25","2016-06-01","2016-06-08","2016-06-15","2016-06-22","2016-06-29","2016-07-07","2016-07-14","2016-07-21","2016-07-28","2016-08-04","2016-08-11","2016-08-19","2016-08-26","2016-09-02","2016-09-12","2016-09-20","2016-09-27","2016-10-04","2016-10-13","2016-10-20","2016-10-27","2016-11-04","2016-11-11","2016-11-21","2016-11-28","2016-12-05","2016-12-12","2016-12-19","2016-12-26","2017-01-02","2017-01-09","2017-01-16","2017-01-23","2017-01-31","2017-02-07","2017-02-14","2017-02-21","2017-03-01","2017-03-08","2017-03-16","2017-03-23","2017-03-30","2017-04-07","2017-04-17","2017-04-24","2017-05-02","2017-05-09","2017-05-16","2017-05-23","2017-05-30","2017-06-06","2017-06-13","2017-06-20","2017-06-28","2017-07-05","2017-07-12","2017-07-19","2017-07-26","2017-08-02","2017-08-09","2017-08-17","2017-08-24","2017-09-01","2017-09-08","2017-09-15","2017-09-22","2017-09-29","2017-10-09","2017-10-16","2017-10-25","2017-11-01","2017-11-08","2017-11-15","2017-11-22","2017-11-29","2017-12-06","2017-12-13","2017-12-20","2017-12-28","2018-01-04","2018-01-11","2018-01-18","2018-01-25","2018-02-02","2018-02-09","2018-02-19","2018-02-26","2018-03-06","2018-03-13","2018-03-20","2018-03-27","2018-04-05","2018-04-12","2018-04-19","2018-04-26","2018-05-04","2018-05-11","2018-05-18","2018-05-25","2018-06-01","2018-06-08","2018-06-15","2018-06-22","2018-06-29","2018-07-06","2018-07-13","2018-07-20","2018-07-27","2018-08-03","2018-08-10","2018-08-20","2018-08-28","2018-09-04","2018-09-11","2018-09-19","2018-09-27","2018-10-05","2018-10-12","2018-10-22","2018-10-29","2018-11-05","2018-11-14","2018-11-21","2018-11-29","2018-12-06","2018-12-13","2018-12-20","2018-12-28","2019-01-04","2019-01-11","2019-01-18","2019-01-25","2019-02-01","2019-02-08","2019-02-18","2019-02-25","2019-03-05","2019-03-12","2019-03-19","2019-03-27","2019-04-04","2019-04-11","2019-04-22","2019-04-30","2019-05-08","2019-05-15","2019-05-22","2019-05-29","2019-06-06","2019-06-13","2019-06-20","2019-06-27","2019-07-04","2019-07-11","2019-07-18","2019-07-25","2019-08-01","2019-08-08","2019-08-19","2019-08-26","2019-09-03","2019-09-11","2019-09-18","2019-09-25","2019-10-03","2019-10-11","2019-10-18","2019-10-29","2019-11-05","2019-11-13","2019-11-20","2019-11-27","2019-12-04","2019-12-11","2019-12-18","2019-12-26","2020-01-02","2020-01-09","2020-01-16","2020-01-23","2020-01-30","2020-02-06","2020-02-13","2020-02-20","2020-02-28","2020-03-06","2020-03-16","2020-03-23","2020-03-30","2020-04-08","2020-04-17","2020-04-24","2020-05-04","2020-05-11","2020-05-18","2020-05-26","2020-06-02","2020-06-09","2020-06-16","2020-06-23","2020-06-30","2020-07-07","2020-07-14","2020-07-21","2020-07-28","2020-08-04","2020-08-11","2020-08-18","2020-08-25","2020-09-01","2020-09-08","2020-09-15","2020-09-22","2020-09-29","2020-10-07","2020-10-14","2020-10-21","2020-10-28","2020-11-04","2020-11-11","2020-11-19","2020-11-26","2020-12-04","2020-12-11","2020-12-18","2020-12-28","2021-01-04","2021-01-11","2021-01-18","2021-01-25","2021-02-02","2021-02-09","2021-02-16","2021-02-23","2021-03-02","2021-03-09","2021-03-17","2021-03-24","2021-04-01","2021-04-09","2021-04-19","2021-04-27","2021-05-04","2021-05-11","2021-05-19","2021-05-26","2021-06-02","2021-06-09","2021-06-16","2021-06-23","2021-06-30","2021-07-07","2021-07-14","2021-07-22","2021-07-29","2021-08-05","2021-08-12","2021-08-20","2021-08-27","2021-09-03","2021-09-13","2021-09-20","2021-09-27","2021-10-04","2021-10-11","2021-10-19","2021-10-26","2021-11-02","2021-11-11","2021-11-18","2021-11-26","2021-12-03","2021-12-10","2021-12-17","2021-12-24","2021-12-31","2022-01-07","2022-01-14","2022-01-21","2022-01-31","2022-02-07","2022-02-14","2022-02-21","2022-02-28","2022-03-08","2022-03-15","2022-03-23","2022-03-30","2022-04-06","2022-04-13","2022-04-22","2022-04-29","2022-05-09","2022-05-16","2022-05-23","2022-05-30","2022-06-06","2022-06-13","2022-06-20","2022-06-27","2022-07-04","2022-07-11","2022-07-18","2022-07-25","2022-08-01","2022-08-08","2022-08-17","2022-08-24","2022-09-01","2022-09-08","2022-09-15","2022-09-22","2022-09-29","2022-10-07","2022-10-14","2022-10-21","2022-11-01","2022-11-09","2022-11-16","2022-11-23","2022-11-30","2022-12-07","2022-12-14","2022-12-21","2022-12-28","2023-01-04","2023-01-11","2023-01-18","2023-01-25","2023-02-02","2023-02-09","2023-02-16","2023-02-23","2023-03-02","2023-03-10","2023-03-17","2023-03-24","2023-04-03","2023-04-12","2023-04-20","2023-04-27","2023-05-05","2023-05-12","2023-05-19","2023-05-26","2023-06-02","2023-06-09","2023-06-16","2023-06-23","2023-07-03","2023-07-10","2023-07-17","2023-07-24","2023-07-31","2023-08-07","2023-08-14","2023-08-22","2023-08-29","2023-09-05","2023-09-12","2023-09-20","2023-09-27","2023-10-05","2023-10-12","2023-10-19","2023-10-27","2023-11-03","2023-11-10","2023-11-20","2023-11-28","2023-12-05","2023-12-12","2023-12-19","2023-12-27","2024-01-03","2024-01-10","2024-01-17","2024-01-25","2024-02-02","2024-02-09","2024-02-16","2024-02-23","2024-03-01","2024-03-11","2024-03-18","2024-03-26","2024-04-03","2024-04-10","2024-04-19","2024-04-26","2024-05-06","2024-05-13","2024-05-21","2024-05-28","2024-06-04","2024-06-11","2024-06-19","2024-06-26","2024-07-03","2024-07-10","2024-07-18","2024-07-25","2024-08-01","2024-08-08","2024-08-16","2024-08-23","2024-08-30","2024-09-06","2024-09-13","2024-09-20","2024-09-27","2024-10-07","2024-10-14","2024-10-21","2024-10-28","2024-11-05","2024-11-12","2024-11-21","2024-11-28","2024-12-05","2024-12-12","2024-12-19","2024-12-27","2025-01-03","2025-01-10","2025-01-17","2025-01-24","2025-01-31","2025-02-07","2025-02-14","2025-02-21","2025-03-03","2025-03-10","2025-03-18","2025-03-25","2025-04-02","2025-04-09","2025-04-21","2025-04-28","2025-05-06","2025-05-13","2025-05-20","2025-05-27","2025-06-03","2025-06-10","2025-06-17","2025-06-24","2025-07-01","2025-07-08","2025-07-15","2025-07-22","2025-07-29","2025-08-05","2025-08-12","2025-08-20","2025-08-28","2025-09-04","2025-09-11","2025-09-18","2025-09-25","2025-10-03","2025-10-10","2025-10-17","2025-10-29","2025-11-06","2025-11-13","2025-11-20","2025-11-27","2025-12-04","2025-12-11","2025-12-18","2025-12-26","2026-01-02","2026-01-09","2026-01-19","2026-01-27","2026-02-03","2026-02-10","2026-02-17","2026-02-24","2026-03-04","2026-03-11","2026-03-18","2026-03-25","2026-04-06","2026-04-13","2026-04-21","2026-04-28","2026-05-06","2026-05-13","2026-05-20","2026-05-27","2026-06-04","2026-06-11","2026-06-18","2026-06-25","2026-07-03","2026-07-10","2026-07-17","2026-07-24","2026-07-31","2026-08-07","2026-08-14","2026-08-21","2026-08-28","2026-09-04","2026-09-11","2026-09-21","2026-09-28","2026-10-05"],"MAVT":[100.0,97.9,97.3,98.7,99.2,99.9,100.3,101.0,100.8,101.1,100.3,100.8,100.4,101.6,102.3,103.2,104.0,103.9,106.3,107.2,107.0,106.8,105.7,105.1,105.2,105.2,105.7,105.3,107.9,107.2,106.2,106.6,105.7,107.2,106.2,107.3,107.2,106.9,105.9,105.4,103.9,102.3,104.7,104.2,102.8,103.1,101.4,98.6,98.5,99.9,101.1,101.3,101.2,103.5,102.3,102.5,101.9,101.4,101.9,103.3,103.8,103.7,104.6,103.9,106.4,108.0,108.2,109.8,109.0,108.9,108.9,110.0,110.8,112.3,112.3,112.0,113.4,112.5,113.6,113.5,112.8,113.4,113.3,113.1,113.1,114.1,113.0,112.2,113.2,115.0,115.2,115.4,116.0,113.8,111.5,112.6,112.3,114.1,113.7,113.0,115.5,113.4,113.1,113.9,115.1,116.6,117.4,118.1,119.2,118.0,119.2,119.5,119.9,120.6,119.9,121.6,120.9,119.3,119.4,118.8,118.2,119.0,120.4,120.2,120.5,121.6,123.1,123.5,122.0,120.2,120.4,121.5,121.5,122.4,125.0,124.6,122.1,124.8,123.6,124.0,122.7,121.9,122.9,123.3,123.5,123.1,122.9,121.6,122.9,123.7,122.6,122.3,121.5,121.3,121.9,121.8,120.4,121.2,119.6,118.1,117.9,119.6,121.7,117.5,118.5,118.2,119.2,120.3,120.2,120.9,121.5,122.6,121.9,120.1,118.8,119.4,118.5,118.0,117.6,118.6,120.3,119.6,116.2,117.1,120.1,120.1,120.3,120.3,121.1,122.8,121.8,122.3,122.5,122.9,125.3,124.9,124.7,125.7,125.9,125.1,126.1,126.6,127.1,126.7,128.7,130.9,132.0,131.8,133.4,133.4,134.7,134.6,133.1,133.6,133.4,134.9,134.0,134.6,132.6,132.7,132.6,132.7,131.8,130.9,132.8,132.5,132.3,130.4,129.2,131.7,133.4,135.6,135.8,135.9,137.8,139.4,141.5,143.0,141.0,141.7,141.7,140.2,141.0,140.5,139.7,137.9,138.2,140.1,141.4,144.2,146.3,144.8,144.2,142.9,143.0,144.4,147.2,148.6,149.4,147.1,146.3,145.0,147.6,147.9,148.2,146.3,144.9,147.3,149.5,148.6,148.6,149.2,149.2,154.4,154.8,149.9,149.8,152.7,156.9,157.0,158.2,161.1,165.7,164.6,159.9,161.4,162.7,160.6,161.8,159.9,160.3,159.4,162.2,164.4,164.1,161.7,165.2,165.0,165.8,165.9,167.6,168.4,166.9,164.5,165.8,167.6,167.4,169.1,167.9,169.9,170.2,175.1,175.6,174.4,175.3,172.6,170.9,171.6,170.5,168.8,170.8,165.2,164.2,164.5,164.5,166.2,164.8,165.7,165.4,167.0,168.5,168.1,171.3,171.2,171.4,172.3,169.5,170.5,172.1,172.4,172.9,174.1,174.4,176.8,172.6,171.4,173.1,174.1,177.1,179.2,184.1,183.6,185.5,184.8,186.0,184.2,181.3,186.6,188.2,190.2,191.3,191.2,189.5,192.8,191.2,193.1,196.7,198.6,201.2,201.2,202.8,202.4,202.6,199.9,204.6,207.4,209.8,213.6,215.2,216.2,216.1,218.6,220.5,222.7,210.4,213.2,202.7,196.0,200.8,202.1,204.9,204.6,204.7,204.7,205.2,205.3,206.8,207.4,207.9,209.5,209.3,211.5,212.1,215.0,218.1,220.4,221.7,222.6,221.0,223.0,219.7,220.5,216.8,217.9,219.6,222.6,222.0,221.1,222.7,226.5,226.5,227.2,229.6,229.7,233.2,233.8,236.5,236.7,234.0,236.7,236.7,239.5,240.1,234.5,234.1,230.4,231.9,230.6,232.6,237.9,239.5,239.3,237.2,237.5,238.7,242.4,243.0,243.2,244.2,243.2,243.8,246.9,247.1,246.5,246.7,249.9,247.6,249.2,251.5,255.8,254.6,252.8,255.4,252.1,255.6,261.2,262.7,260.8,263.9,263.6,259.3,257.5,261.1,258.4,259.3,260.4,258.0,260.0,255.1,251.9,253.2,254.0,254.0,253.8,254.5,252.9,259.9,262.3,262.8,261.1,259.4,257.9,249.8,248.1,249.7,250.4,249.3,245.6,243.1,245.7,245.7,246.0,246.4,249.3,255.2,256.1,259.7,256.2,253.4,255.2,253.6,250.5,247.9,251.4,248.9,249.1,253.2,252.9,258.0,256.2,258.4,259.9,262.5,259.7,258.1,260.5,260.8,262.7,262.0,267.4,266.4,265.7,261.1,259.8,259.6,263.8,265.5,269.0,273.1,272.6,274.7,278.5,279.6,282.1,283.5,286.2,285.1,288.5,285.1,289.4,289.0,294.8,294.3,295.5,292.8,289.7,288.6,289.4,292.3,293.0,294.1,290.1,285.5,291.0,292.1,289.7,292.9,293.4,298.8,301.5,307.3,306.9,314.9,317.7,316.2,315.5,314.8,317.2,322.8,322.1,322.6,323.8,325.4,331.6,328.5,331.9,336.5,340.2,335.5,336.9,337.6,337.3,345.0,345.7,339.1,346.3,350.6,352.1,353.5,355.9,359.1,348.1,351.8,341.7,349.2,351.0,351.9,349.1,355.5,359.5,364.3,357.5,361.5,360.1,358.9,357.8,355.5,353.9,357.7,364.4,370.1,368.4,369.5,369.7,365.9,368.0,372.0,374.1,377.2,376.3,373.9,367.2,370.2,371.2,378.4,382.9,375.3,391.1,390.0,392.6,392.6,395.5,397.2,398.2,399.7,399.9,400.7,402.9,403.7,403.4,406.2,406.0,406.3,402.1,402.4,401.5,406.8,413.1,419.0,419.6,427.8,437.7,444.3,441.6,438.4,445.2,442.7,443.6,443.4,440.6,441.2,447.0,447.3,442.1,444.4,448.6,443.2,445.3,444.5,444.3,437.1,435.8,434.1,429.8,428.8,434.4,440.9,441.2,442.9,444.3,444.9,446.2,447.3,442.4,448.8,447.5,451.8,451.0,450.6,447.4,444.8,456.8,457.9,457.8,455.6,450.3,447.9,445.3,434.5,432.7],"XMOM":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,100.6,100.4,100.3,98.3,101.6,100.7,98.9,99.3,97.3,92.8,94.4,96.6,98.3,100.6,100.0,103.3,100.3,99.9,100.6,101.5,102.0,104.7,105.7,105.0,105.8,104.4,104.0,107.0,107.6,112.6,111.0,110.5,109.7,110.5,111.6,112.1,113.1,112.3,114.7,113.8,115.9,116.5,115.0,117.3,118.2,117.0,116.6,118.4,116.6,115.7,116.3,117.4,117.9,118.8,120.4,119.6,118.2,121.1,118.5,119.2,117.9,117.2,121.9,122.9,124.8,126.8,128.9,129.5,129.4,131.1,132.0,131.3,134.3,135.1,133.6,136.2,136.6,139.9,140.4,138.6,139.3,138.8,136.6,137.3,141.5,145.4,146.2,147.0,150.0,152.8,148.3,145.5,145.7,149.0,148.7,145.4,150.1,149.7,146.7,154.1,153.9,154.2,153.4,153.0,152.9,152.1,153.6,151.0,152.4,150.0,151.5,152.0,151.3,151.0,149.8,149.8,151.9,151.2,149.5,152.0,153.9,151.5,152.7,150.6,152.8,143.0,145.1,145.5,148.9,150.5,151.0,150.6,150.7,153.6,155.6,156.0,154.6,155.4,155.1,155.9,153.6,154.3,159.4,158.2,152.1,152.9,160.8,155.2,158.5,155.7,154.2,155.5,154.3,153.9,155.2,157.9,159.0,159.2,159.5,161.6,161.4,159.4,158.6,158.4,159.9,159.2,162.3,164.7,164.5,164.5,165.9,166.5,169.1,168.1,166.2,165.0,165.2,167.4,166.8,167.4,163.9,164.8,163.5,164.3,163.8,168.8,172.6,174.2,173.7,171.3,168.8,173.6,176.7,179.8,180.8,179.7,179.6,187.2,193.2,194.9,193.7,195.9,193.6,189.1,189.6,186.5,184.5,179.6,185.7,190.0,190.7,197.7,201.2,200.8,200.6,200.4,204.2,207.1,211.4,213.1,213.6,207.6,201.0,197.2,197.7,195.6,197.5,195.3,193.8,198.3,200.7,200.8,200.0,202.2,202.5,214.8,215.3,208.8,211.4,217.7,226.2,226.4,226.1,231.5,238.1,238.4,231.5,232.2,236.8,234.3,239.7,236.6,231.4,228.5,231.3,236.4,236.5,228.4,235.1,244.7,246.3,247.8,251.8,253.8,255.7,251.1,252.0,259.9,261.6,265.1,262.7,267.5,269.3,272.9,276.3,272.3,273.4,271.1,265.3,264.6,258.2,249.6,257.2,234.7,230.2,234.3,231.8,235.4,226.2,227.0,226.0,231.5,237.3,236.3,239.5,239.2,241.3,240.9,236.6,239.7,242.0,241.5,241.8,242.4,241.6,243.8,239.6,239.8,242.5,245.2,248.4,248.6,251.7,252.1,253.9,252.8,254.7,250.6,246.2,255.7,257.2,261.2,260.3,256.6,255.9,256.9,257.0,258.3,258.8,258.8,260.0,258.6,259.8,258.8,258.8,255.9,260.3,265.0,267.4,273.6,274.1,277.6,279.1,282.6,286.2,292.2,275.8,288.3,258.4,245.2,276.4,285.9,311.8,305.6,304.9,309.5,317.0,316.0,315.2,318.9,323.1,330.1,327.2,334.4,340.4,344.8,350.9,361.3,361.8,365.9,360.3,368.3,357.5,356.0,348.5,352.3,351.0,363.1,358.8,357.3,361.2,361.0,360.3,360.7,366.6,362.2,371.9,372.4,376.9,373.3,366.8,377.1,371.7,375.6,375.4,362.0,359.3,351.7,354.7,351.6,357.2,369.1,368.1,370.3,364.9,360.8,360.0,369.4,373.7,375.2,382.2,385.9,392.2,396.5,399.1,396.9,398.8,405.0,405.8,406.1,414.6,422.9,421.8,418.9,425.7,417.8,423.1,434.9,438.1,438.2,440.4,439.8,432.0,432.0,440.1,429.1,432.9,437.9,436.1,437.1,418.9,413.5,413.3,406.1,404.1,400.2,389.3,390.1,419.7,430.6,435.5,437.7,431.8,428.4,405.4,401.3,399.2,404.2,404.2,387.5,372.6,383.0,373.7,372.8,374.0,378.6,388.9,392.8,397.6,393.4,388.2,391.5,390.7,387.6,378.2,389.5,384.3,382.1,385.0,388.1,394.4,392.0,393.7,395.0,399.4,396.0,393.3,399.4,397.6,401.9,400.5,404.5,402.1,399.9,393.0,390.5,389.8,395.8,398.7,403.2,411.2,409.1,411.5,417.3,414.3,413.5,413.3,413.1,411.8,413.3,407.8,414.4,415.0,424.7,422.5,429.0,422.7,417.4,416.2,416.6,423.6,421.5,421.8,412.6,406.7,417.8,419.1,415.0,422.9,424.5,435.5,439.8,441.4,442.1,451.0,458.1,454.3,452.6,451.2,462.4,465.5,467.6,472.2,474.8,477.2,478.6,472.8,480.5,481.5,486.0,468.9,476.8,478.1,477.4,487.6,493.5,485.1,502.5,517.6,520.7,528.7,536.8,537.9,518.4,528.1,501.0,525.0,528.1,532.6,520.6,532.0,538.9,550.0,533.3,541.7,536.7,535.9,529.7,542.9,530.2,544.2,559.0,593.1,598.1,614.6,608.3,593.5,606.8,634.9,620.3,635.8,632.9,628.9,602.0,605.5,600.5,610.4,612.9,576.6,606.6,605.7,615.8,615.9,617.1,618.3,628.4,631.8,638.3,635.4,650.4,645.2,648.7,653.5,649.5,658.6,655.3,653.8,662.6,675.8,690.5,707.1,718.6,754.9,784.1,808.5,785.6,780.8,804.5,783.1,786.1,798.3,798.0,810.0,826.7,819.4,825.5,850.2,893.9,861.7,875.9,859.9,877.2,869.9,873.1,863.4,857.0,880.4,907.1,974.1,986.7,1003.4,1066.1,1059.6,1057.5,1076.5,1005.8,1033.5,994.3,1028.0,1010.8,1008.4,1010.3,971.8,1035.0,1047.8,1070.5,1063.1,1043.5,1047.7,1045.4,1016.8,1020.8],"NIFTY":[100.0,96.0,94.2,95.2,95.7,97.6,97.9,99.9,99.7,102.9,100.9,101.8,98.3,101.3,102.7,103.3,103.4,101.2,103.9,108.6,109.5,110.9,109.1,109.2,110.3,111.0,110.7,108.5,111.5,114.9,114.6,115.4,114.3,117.0,116.2,117.6,117.2,117.5,115.6,114.8,113.9,110.8,114.2,113.6,108.8,109.7,106.6,107.1,112.2,115.3,116.3,118.7,114.8,118.1,114.4,110.2,109.4,109.7,112.8,114.5,116.6,114.4,111.2,108.3,105.5,106.1,107.6,114.0,113.6,114.3,112.5,117.1,117.4,119.6,122.1,119.3,120.1,118.8,120.8,123.3,119.6,122.2,122.4,119.8,121.1,122.3,119.3,117.0,118.3,119.0,120.6,122.9,125.3,124.5,127.2,129.3,130.4,131.1,129.2,128.2,137.2,140.2,140.1,144.1,147.6,145.9,145.2,149.2,146.6,147.7,151.3,148.0,147.3,152.7,153.3,157.2,158.4,154.3,156.3,155.0,153.1,153.4,156.7,162.3,163.0,164.2,166.9,166.5,160.2,160.1,160.2,162.2,161.5,165.5,172.5,170.2,166.7,172.4,168.6,171.0,169.1,165.9,161.9,166.6,169.7,161.6,159.6,155.9,158.9,161.9,160.2,157.4,156.9,156.6,161.6,163.6,162.2,165.2,167.1,162.6,166.5,162.5,164.5,151.7,150.3,151.6,153.2,153.8,157.2,157.7,160.3,159.6,157.0,151.8,152.7,154.0,151.5,148.0,151.2,153.6,151.7,147.2,143.1,144.8,145.1,141.4,137.1,138.0,139.9,146.1,146.1,150.6,150.0,147.3,153.8,154.9,150.1,152.3,152.8,154.0,159.1,161.4,159.7,159.8,159.8,162.6,166.9,166.2,169.2,167.4,167.9,169.4,167.7,172.0,171.1,172.2,170.6,171.4,167.8,170.2,169.1,165.8,163.2,156.1,159.8,159.7,160.0,159.1,155.1,160.3,161.5,164.6,164.1,167.4,171.6,172.3,174.1,175.8,174.8,179.4,178.5,180.0,180.4,179.4,180.7,182.4,182.6,186.3,183.9,188.5,189.2,188.9,189.8,186.7,189.6,193.0,195.1,197.5,199.2,196.0,196.1,195.3,197.5,196.3,199.2,196.9,193.9,197.9,202.7,203.4,206.3,204.1,200.5,204.4,205.0,199.2,202.0,206.4,207.3,207.7,211.2,214.1,218.7,213.6,207.8,206.2,209.9,203.7,207.2,200.9,201.9,205.2,208.1,209.5,210.9,211.2,214.2,210.4,210.8,213.1,214.7,216.0,215.9,213.4,215.6,220.1,220.6,225.2,227.7,228.4,230.9,234.6,231.2,226.4,225.8,220.1,207.3,210.4,205.7,205.7,211.4,211.9,212.5,218.0,213.1,216.1,219.9,218.0,215.9,216.3,218.5,216.8,218.6,220.1,214.4,218.2,220.6,227.4,231.8,230.6,233.8,233.6,233.9,236.9,229.5,225.6,236.7,239.5,239.3,240.8,239.0,239.6,242.0,234.6,235.3,228.4,223.2,224.5,224.8,224.8,219.8,224.2,220.4,233.0,230.1,229.9,237.0,239.3,242.0,241.3,243.5,245.5,244.7,242.3,248.1,247.0,249.8,248.3,251.3,248.2,245.2,247.5,248.2,246.4,229.0,224.9,196.5,160.3,171.2,178.2,188.5,186.4,189.7,188.5,180.3,184.7,203.3,205.1,202.0,213.1,210.2,220.1,216.8,227.6,230.4,226.5,231.2,232.2,234.1,234.5,232.0,235.9,228.3,230.0,239.7,244.6,243.8,240.7,243.9,260.8,261.6,265.4,271.2,276.3,282.1,283.7,289.3,296.4,292.9,292.7,299.7,309.5,313.9,302.5,306.3,310.0,303.1,299.6,304.7,304.8,295.8,301.1,298.6,305.1,308.4,313.8,321.1,321.7,325.8,323.8,324.7,327.2,327.5,327.0,326.2,336.2,338.2,340.4,346.0,358.8,359.2,360.6,370.1,366.7,370.7,380.9,378.4,370.7,371.0,368.8,354.2,357.1,363.0,352.8,352.2,360.5,369.4,378.9,366.0,360.2,357.7,350.5,357.6,349.1,332.9,346.7,357.7,362.6,370.5,363.9,357.2,356.0,339.7,330.4,337.0,346.4,345.8,329.9,321.2,331.4,331.4,338.3,340.5,348.3,362.1,366.3,375.4,369.8,368.2,372.4,375.7,370.3,353.4,363.2,360.9,367.7,380.1,380.7,385.6,383.0,393.0,389.4,392.3,382.8,380.1,379.5,376.5,381.3,376.3,370.3,376.0,378.8,368.6,364.6,366.2,359.8,356.4,365.8,373.6,370.5,376.1,379.8,384.4,383.6,389.4,391.3,391.7,396.8,393.5,407.5,408.2,415.7,416.1,417.7,414.6,411.8,409.7,409.2,414.3,422.7,421.6,417.6,413.7,419.6,415.9,404.2,408.3,411.3,417.2,421.5,441.6,443.4,454.4,458.6,456.4,458.3,457.6,453.3,463.2,462.2,468.4,471.6,473.9,475.0,468.4,468.0,477.2,482.9,471.3,476.9,476.8,470.6,479.4,488.0,480.8,496.8,501.8,508.7,518.8,520.1,528.9,522.0,534.3,517.0,525.6,531.0,539.6,533.3,543.6,551.1,560.5,533.7,539.0,530.7,522.1,519.8,512.9,501.6,513.9,529.7,526.2,515.2,511.4,515.3,503.4,498.7,495.6,504.9,506.3,493.3,490.5,476.2,483.3,484.1,508.2,502.3,481.9,517.7,522.0,523.3,529.2,531.5,534.2,529.4,540.2,534.8,540.3,550.6,550.8,544.6,541.5,537.7,533.9,530.9,542.3,531.6,536.2,542.4,550.4,539.9,539.7,548.1,557.0,565.3,553.3,561.3,567.5,569.0,565.1,562.3,560.2,565.3,571.2,557.8,556.0,547.5,559.1,563.5,559.6,552.6,532.3,519.4,517.2,506.9,499.6,517.4,533.0,521.2,529.3,509.6,514.6,520.1,509.9,504.2,525.9,524.9,529.7,528.0,530.7,520.6,532.6,537.2,534.3,531.3,529.1,524.6,512.8,514.0,500.0,493.9]};
+  const STRESS={covid:{a:"2020-02-19",b:"2020-03-23",t:"Covid crash, 19 Feb – 23 Mar 2020",r:[-0.1159,-0.1538,-0.3505]},
+                taper:{a:"2013-05-22",b:"2013-08-28",t:"Taper tantrum, 22 May – 28 Aug 2013",r:[0.0690,0.0637,-0.1226]},
+                hikes:{a:"2022-01-03",b:"2022-06-30",t:"2022 rate hikes, Jan – Jun",r:[-0.0655,-0.1542,-0.1003]}};
+  const SUM={growth:{t:"Growth of 100, since 2012",r:[0.1069,0.1853,0.1171],u:" a year"},dd:{t:"Fall from the previous high",r:[-0.1201,-0.2054,-0.3634],u:" worst"}};
+  let amView="growth";
+  const dd=a=>{let m=-1/0;return a.map(v=>v==null?null:(m=Math.max(m,v),v/m-1));};
+  const DD={MAVT:dd(AM.MAVT),XMOM:dd(AM.XMOM),NIFTY:dd(AM.NIFTY)};
+  function amrip(){
+    if(!$("amCv"))return;
+    const st=STRESS[amView],sm=SUM[amView]||SUM.growth,mode=amView==="dd"?"dd":"growth";
+    $("amTitle").textContent=st?st.t:sm.t;
+    const r=st?st.r:sm.r,unit=st?" in the window":sm.u;
+    [["amM",0],["amX",1],["amN",2]].forEach(([id,i])=>{const e=$(id);e.textContent=(r[i]>0?"+":"")+pct(r[i]);e.className=r[i]<0?"neg":"pos";e.title=unit.trim();});
+    const c=D.setup($("amCv"));if(!c)return;const{g,W,H}=c,L=44,R=10,Tp=10,B=24,n=AM.d.length;
+    const X=i=>L+i/(n-1)*(W-L-R);
+    const S=[["NIFTY","--muted",1.4],["MAVT","--accent",2.2],["XMOM","--accent-2",2]];
+    let Y,ticks;
+    if(mode==="growth"){const lo=Math.log(80),hi=Math.log(1300);Y=v=>Tp+(1-(Math.log(v)-lo)/(hi-lo))*(H-Tp-B);ticks=[100,200,400,800];}
+    else{Y=v=>Tp+(-v/0.4)*(H-Tp-B);ticks=[0,-0.1,-0.2,-0.3,-0.4];}
+    g.font="10.5px "+mono();
+    ticks.forEach(v=>{g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(L,Y(v));g.lineTo(W-R,Y(v));g.stroke();g.fillStyle=css("--muted");g.textAlign="right";g.textBaseline="middle";g.fillText(mode==="growth"?v:Math.round(v*100)+"%",L-7,Y(v));});
+    g.textAlign="center";g.textBaseline="top";
+    for(let yr=2013;yr<=2026;yr+=3){const i=AM.d.findIndex(d=>d>=yr+"-01-01");if(i>0)g.fillText(String(yr),X(i),H-B+8);}
+    if(st){const i0=AM.d.findIndex(d=>d>=st.a),i1=AM.d.findIndex(d=>d>st.b);g.fillStyle=css("--loss");g.globalAlpha=.16;g.fillRect(X(i0),Tp,Math.max(X(i1<0?n-1:i1)-X(i0),3),H-Tp-B);g.globalAlpha=1;}
+    S.forEach(([k,col,w])=>{const a=mode==="growth"?AM[k]:DD[k];g.strokeStyle=css(col);g.lineWidth=w;g.beginPath();let on=false;a.forEach((v,i)=>{if(v==null){on=false;return;}on?g.lineTo(X(i),Y(v)):(g.moveTo(X(i),Y(v)),on=true);});g.stroke();});
+  }
+  const amChips=[...document.querySelectorAll("#amChips [data-v]")];
+  amChips.forEach(b=>b.addEventListener("click",()=>{amView=b.dataset.v;amChips.forEach(x=>x.setAttribute("aria-pressed",String(x===b)));amrip();}));
+
+  /* ---------- nsepipe: price-break classifier ---------- */
+  const ACT=[[1.25,"Bonus 1:4"],[1.5,"Bonus 1:2"],[2,"Split 1:2 or bonus 1:1"],[3,"Bonus 2:1"],[4,"Bonus 3:1"],[5,"Split 1:5"],[10,"Split 1:10"]];
+  function nse(){
+    if(!$("npCv"))return;
+    const share=+$("npR").value/100,ratio=1/share,raw=share-1;
+    $("npRO").textContent=(share*100).toFixed(1)+"%";
+    let best=null;ACT.forEach(([f,name])=>{const e=Math.abs(Math.log(ratio/f));if(!best||e<best.e)best={f,name,e};});
+    const near=best.e<0.03,inBand=Math.abs(raw)<=0.20;
+    let msg,cls;
+    if(near&&!inBand){msg="<b>"+best.name+"</b> <small>outside the price band and on a standard ratio, so adjusted</small>";cls="pos";}
+    else if(near&&inBand){msg="<b>Ambiguous</b> <small>a real move could look like a "+best.name.toLowerCase()+"; checked against announcements first</small>";cls="";}
+    else if(inBand){msg="<b>A market move</b> <small>inside the 20% band, no adjustment</small>";cls="";}
+    else{msg="<b>Flag for review</b> <small>outside the band but on no standard ratio</small>";cls="neg";}
+    const v=$("npV");v.innerHTML=msg;v.className="verdict "+cls;
+    $("npRaw").textContent=(raw>0?"+":"")+pct(raw);$("npRaw").className=raw<0?"neg":"pos";
+    $("npF").textContent=near?"×"+best.f:"none";
+    const adj=near&&!inBand?best.f*share-1:raw;$("npAdj").textContent=(adj>0?"+":"")+pct(adj);$("npAdj").className=adj<0?"neg":"pos";
+    const c=D.setup($("npCv"));if(!c)return;const{g,W,H}=c,L=16,R=22,lo=Math.log(0.72),hi=Math.log(15),X=f=>L+(Math.log(f)-lo)/(hi-lo)*(W-L-R),mid=62;
+    g.font="10.5px "+mono();g.textBaseline="middle";
+    // legend for the band, top left
+    g.fillStyle=css("--gain");g.globalAlpha=.22;g.fillRect(L,10,12,10);g.globalAlpha=1;
+    g.fillStyle=css("--muted");g.textAlign="left";g.fillText("NSE ±20% price band",L+18,15.5);
+    g.textAlign="right";g.textBaseline="bottom";g.fillText("last close ÷ next open, log scale",W-R+8,H-4);g.textBaseline="middle";
+    // the band itself
+    g.fillStyle=css("--gain");g.globalAlpha=.12;g.fillRect(X(1/1.2),mid-13,X(1/0.8)-X(1/1.2),26);g.globalAlpha=1;
+    g.strokeStyle=css("--line");g.lineWidth=2;g.beginPath();g.moveTo(L,mid);g.lineTo(W-R,mid);g.stroke();
+    // standard ratios, labels staggered onto a second row when they would touch
+    const ends=[-1e9,-1e9];g.textBaseline="top";g.textAlign="center";
+    ACT.forEach(([f])=>{const on=near&&f===best.f,x=X(f),lab="×"+f,w=g.measureText(lab).width;
+      g.strokeStyle=on?css("--accent"):css("--muted");g.lineWidth=on?3:1.5;g.beginPath();g.moveTo(x,mid-9);g.lineTo(x,mid+9);g.stroke();
+      const row=x-w/2>ends[0]+6?0:1;ends[row]=x+w/2;
+      if(row){g.strokeStyle=css("--line");g.lineWidth=1;g.beginPath();g.moveTo(x,mid+11);g.lineTo(x,mid+27);g.stroke();}
+      g.fillStyle=on?css("--accent"):css("--muted");g.fillText(lab,x,mid+(row?29:14));});
+    // where today's open lands
+    const x=X(Math.min(Math.max(ratio,0.73),14.6));g.fillStyle=css("--fg");g.beginPath();g.arc(x,mid,6,0,7);g.fill();g.strokeStyle=css("--bg");g.lineWidth=2;g.stroke();
+    g.textBaseline="bottom";g.textAlign=x<L+30?"left":x>W-R-30?"right":"center";g.fillStyle=css("--fg");g.fillText("÷ "+ratio.toFixed(2),x,mid-16);
+  }
+  $("npR")&&$("npR").addEventListener("input",nse);
+  document.querySelectorAll("#npChips [data-r]").forEach(b=>b.addEventListener("click",()=>{$("npR").value=b.dataset.r;nse();}));
+
+  function all(){nifty();amrip();nse();}
+  all();let t;addEventListener("resize",()=>{clearTimeout(t);t=setTimeout(all,90);});
+  if(document.fonts)document.fonts.ready.then(all);
+})();
+</script>
+
+</body>
+</html>
